@@ -189,7 +189,8 @@ defmodule Mssqlex.Protocol do
   defp handle_transaction(:commit, _opts, state) do
     case ODBC.commit(state.pid) do
       :ok -> {:ok, %Result{}, %{state | mssql: :idle}}
-      {:error, reason} -> {:error, reason, state}
+      {:error, reason} -> 
+        {:error, reason, state}
     end
   end
 
@@ -200,7 +201,14 @@ defmodule Mssqlex.Protocol do
     end
   end
 
-  defp handle_savepoint(:begin, opts, state) do
+  defp handle_savepoint(type, opts, state) do
+    case savepoint_result(type, opts, state) do
+      {status, _query, message, state} -> {status, message, state}
+      result -> result
+    end
+  end
+
+  defp savepoint_result(:begin, opts, state) do
     if state.mssql == :autocommit do
       {:error,
        %Mssqlex.Error{message: "savepoint not allowed in autocommit mode"},
@@ -218,11 +226,11 @@ defmodule Mssqlex.Protocol do
     end
   end
 
-  defp handle_savepoint(:commit, _opts, state) do
+  defp savepoint_result(:commit, _opts, state) do
     {:ok, %Result{}, state}
   end
 
-  defp handle_savepoint(:rollback, opts, state) do
+  defp savepoint_result(:rollback, opts, state) do
     handle_execute(
       %Mssqlex.Query{
         name: "",
@@ -244,25 +252,28 @@ defmodule Mssqlex.Protocol do
 
   @doc false
   @spec handle_execute(query, params, opts :: Keyword.t(), state) ::
-          {:ok, result, state}
-          | {:error | :disconnect, Exception.t(), state}
+          {:ok, query, result, state}
+          | {:error | :disconnect, Query.t(), Exception.t(), state}
   def handle_execute(query, params, opts, state) do
-    {status, message, new_state} = do_query(query, params, opts, state)
+    case do_query(query, params, opts, state) do
+      {status, query, message, new_state} ->
+        case new_state.mssql do
+          :idle ->
+            with {:ok, _, post_commit_state} <- handle_commit(opts, new_state) do
+              {status, query, message, post_commit_state}
+            end
 
-    case new_state.mssql do
-      :idle ->
-        with {:ok, _, post_commit_state} <- handle_commit(opts, new_state) do
-          {status, message, post_commit_state}
+          :transaction ->
+            {status, query, message, new_state}
+
+          :auto_commit ->
+            with {:ok, post_connect_state} <- switch_auto_commit(:off, new_state) do
+              {status, query, message, post_connect_state}
+            end
         end
-
-      :transaction ->
-        {status, message, new_state}
-
-      :auto_commit ->
-        with {:ok, post_connect_state} <- switch_auto_commit(:off, new_state) do
-          {status, message, post_connect_state}
-        end
+      {:error, error, new_state} -> {:error, error, new_state}
     end
+
   end
 
   defp do_query(query, params, opts, state) do
@@ -272,7 +283,7 @@ defmodule Mssqlex.Protocol do
           {:error, reason, state}
         else
           with {:ok, new_state} <- switch_auto_commit(:on, state),
-               do: handle_execute(query, params, opts, new_state)
+            do: handle_execute(query, params, opts, new_state)
         end
 
       {:error, %Mssqlex.Error{odbc_code: :connection_exception} = reason} ->
@@ -282,15 +293,16 @@ defmodule Mssqlex.Protocol do
         {:error, reason, state}
 
       {:selected, columns, rows} ->
-        {:ok,
-         %Result{
+        result =
+          %Result{
            columns: Enum.map(columns, &to_string(&1)),
            rows: rows,
            num_rows: Enum.count(rows)
-         }, state}
+         }
+        {:ok, query, result, state}
 
       {:updated, num_rows} ->
-        {:ok, %Result{num_rows: num_rows}, state}
+        {:ok, query, %Result{num_rows: num_rows}, state}
     end
   end
 
@@ -310,7 +322,7 @@ defmodule Mssqlex.Protocol do
     query = %Mssqlex.Query{name: "ping", statement: "SELECT 1"}
 
     case do_query(query, [], [], state) do
-      {:ok, _, new_state} -> {:ok, new_state}
+      {:ok, _, _, new_state} -> {:ok, new_state}
       {:error, reason, new_state} -> {:disconnect, reason, new_state}
       other -> other
     end

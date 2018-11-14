@@ -12,8 +12,8 @@ defmodule Mssqlex.LoginTest do
   test "Given valid details, connects to database" do
     assert {:ok, pid} = Mssqlex.start_link([])
 
-    assert {:ok, _, %Result{num_rows: 1, rows: [["test"]]}} =
-             Mssqlex.query(pid, "SELECT 'test'", [])
+    result = %Result{columns: [""], num_rows: 1, rows: [["test"]]}
+    assert {:ok, _, ^result} = Mssqlex.query(pid, "SELECT 'test'", [])
   end
 
   test "connects with encryption" do
@@ -29,7 +29,6 @@ defmodule Mssqlex.LoginTest do
 
     assert {:ok, pid} = Mssqlex.start_link(password: "badpass")
 
-    :timer.sleep(100)
     assert_receive {:EXIT, ^pid,
                     %Mssqlex.Error{odbc_code: :invalid_authorization}}
   end
