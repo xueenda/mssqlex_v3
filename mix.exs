@@ -59,6 +59,7 @@ defmodule Mssqlex.Mixfile do
   end
 
   defp setup_env(_) do
+    System.put_env("MSSQL_HST", "127.0.0.1")
     System.put_env("MSSQL_UID", "sa")
     System.put_env("MSSQL_PWD", "ThePa$$word")
   end

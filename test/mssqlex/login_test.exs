@@ -29,6 +29,7 @@ defmodule Mssqlex.LoginTest do
 
     assert {:ok, pid} = Mssqlex.start_link(password: "badpass")
 
+    :timer.sleep(100)
     assert_receive {:EXIT, ^pid,
                     %Mssqlex.Error{odbc_code: :invalid_authorization}}
   end
