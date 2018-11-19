@@ -83,3 +83,7 @@ defmodule Mssqlex.Error do
     Enum.reduce(constraint_checks, [], extract)
   end
 end
+
+defmodule Mssqlex.QueryError do
+  defexception [:message]
+end
