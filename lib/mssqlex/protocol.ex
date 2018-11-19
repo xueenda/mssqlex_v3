@@ -43,6 +43,7 @@ defmodule Mssqlex.Protocol do
           {:ok, state}
           | {:error, Exception.t()}
   def connect(opts) do
+    opts = [{:connect_timeout, 5_000} | opts]
     server_address =
       opts[:hostname] || System.get_env("MSSQL_HST") || "localhost"
 
@@ -277,6 +278,7 @@ defmodule Mssqlex.Protocol do
   end
 
   defp do_query(query, params, opts, state) do
+    opts = [{:timeout, 15_000} | opts]
     case ODBC.query(state.pid, query.statement, params, opts) do
       {:error, %Mssqlex.Error{odbc_code: :not_allowed_in_transaction} = reason} ->
         if state.mssql == :auto_commit do

@@ -7,9 +7,10 @@ defmodule Mssqlex.Error do
     or the string representation of the code if it cannot be translated.
   """
 
-  defexception [:message, :odbc_code, constraint_violations: []]
+  defexception [:mssql, :message, :odbc_code, constraint_violations: []]
 
   @type t :: %__MODULE__{
+          mssql: map(),
           message: binary(),
           odbc_code: atom() | binary(),
           constraint_violations: Keyword.t()
