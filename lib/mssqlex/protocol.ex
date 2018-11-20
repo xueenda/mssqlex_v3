@@ -12,6 +12,7 @@ defmodule Mssqlex.Protocol do
   use DBConnection
 
   alias Mssqlex.ODBC
+  alias Mssqlex.GetError
   alias Mssqlex.Result
 
   defstruct pid: nil, mssql: :idle, conn_opts: []
@@ -43,7 +44,8 @@ defmodule Mssqlex.Protocol do
           {:ok, state}
           | {:error, Exception.t()}
   def connect(opts) do
-    opts = [{:connect_timeout, 5_000} | opts]
+    opts = Keyword.put_new(opts, :connect_timeout, 5_000)
+
     server_address =
       opts[:hostname] || System.get_env("MSSQL_HST") || "localhost"
 
@@ -55,10 +57,11 @@ defmodule Mssqlex.Protocol do
       opts[:trust_server_certificate] ||
         System.get_env("MSSQL_TRUST_SERVER_CERT")
 
+    driver = opts[:odbc_driver] || System.get_env("MSSQL_DVR") || "{ODBC Driver 17 for SQL Server}"
+    opts = Keyword.put(opts, :driver, driver)
+
     conn_opts = [
-      {"Driver",
-       opts[:odbc_driver] || System.get_env("MSSQL_DVR") ||
-         "{ODBC Driver 17 for SQL Server}"},
+      {"Driver", driver},
       {"Server", build_server_address(server_address, instance_name, port)},
       {"Database", opts[:database] || System.get_env("MSSQL_DB")},
       {"UID", opts[:username] || System.get_env("MSSQL_UID")},
@@ -86,8 +89,8 @@ defmodule Mssqlex.Protocol do
              )
          }}
 
-      response ->
-        response
+      error ->
+        error 
     end
   end
 

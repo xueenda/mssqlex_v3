@@ -13,6 +13,54 @@ defmodule Mssqlex.ODBC do
   use GenServer
 
   alias Mssqlex.Error
+  alias Mssqlex.NewError
+
+  ## Private API
+  
+  @spec get_connection(Keyword.t()) :: {:ok, pid()} | {:error, NewError.t()}
+  defp get_connection(opts) do
+    connect_opts = Keyword.delete_first(opts, :conn_str)
+
+    case :odbc.connect(opts[:conn_str], connect_opts) do
+      {:ok, pid} ->
+        {:ok, pid}
+      {:error, {odbc_code, _native_code, message}} ->
+        {:error, Mssqlex.NewError.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
+    end
+  end
+
+  @spec test_connection(binary(), Keyword.t()) :: {:ok, Keyword.t()} | {:error, NewError.t()}
+  defp test_connection(conn_str, opts) do
+    conn_str = to_charlist(conn_str)
+    connect_opts =
+      opts
+      |> Keyword.put_new(:auto_commit, :off)
+      |> Keyword.put_new(:timeout, 5000)
+      |> Keyword.put_new(:extended_errors, :on)
+      |> Keyword.put_new(:tuple_row, :off)
+      |> Keyword.put_new(:binary_strings, :on)
+
+    hostname = opts[:hostname] || "localhost"
+    port = opts[:port] || 1433
+
+    {:ok, pid} = Task.Supervisor.start_link
+    task = Task.Supervisor.async_nolink(pid, fn ->
+      :odbc.connect(conn_str, connect_opts)
+    end, [timeout: 15_000])
+
+    case Task.yield(task, 15_000) || Task.shutdown(task) do
+      {:ok, {:ok, pid}} ->
+        :ok = :odbc.disconnect(pid)
+        connect_opts = Keyword.put_new(connect_opts, :conn_str, conn_str)
+        {:ok, connect_opts}
+      {:ok, {:error, {odbc_code, _native_code, message}}} ->
+        {:error, Mssqlex.NewError.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
+      {:exit, :timeout} ->
+        {:error, DBConnection.ConnectionError.exception("tcp connect (#{hostname}:#{port}): non-existing domain - :nxdomain")}
+      result ->
+        result |> IO.inspect
+    end
+  end
 
   ## Public API
 
@@ -25,7 +73,12 @@ defmodule Mssqlex.ODBC do
   """
   @spec start_link(binary(), Keyword.t()) :: {:ok, pid()}
   def start_link(conn_str, opts) do
-    GenServer.start_link(__MODULE__, [{:conn_str, to_charlist(conn_str)} | opts])
+    case test_connection(conn_str, opts) do
+      {:ok, connect_opts} ->
+        GenServer.start_link(__MODULE__, connect_opts)
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -107,18 +160,9 @@ defmodule Mssqlex.ODBC do
 
   @doc false
   def init(opts) do
-    connect_opts =
-      opts
-      |> Keyword.delete_first(:conn_str)
-      |> Keyword.put_new(:auto_commit, :off)
-      |> Keyword.put_new(:timeout, 5000)
-      |> Keyword.put_new(:extended_errors, :on)
-      |> Keyword.put_new(:tuple_row, :off)
-      |> Keyword.put_new(:binary_strings, :on)
-
-    case handle_errors(:odbc.connect(opts[:conn_str], connect_opts)) do
+    case get_connection(opts) do
       {:ok, pid} -> {:ok, pid}
-      {:error, reason} -> {:stop, reason}
+      {:error, error} -> {:stop, error.mssql.message}
     end
   end
 
