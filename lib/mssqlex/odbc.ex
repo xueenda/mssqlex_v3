@@ -58,7 +58,7 @@ defmodule Mssqlex.ODBC do
       {:exit, :timeout} ->
         {:error, DBConnection.ConnectionError.exception("tcp connect (#{hostname}:#{port}): non-existing domain - :nxdomain")}
       result ->
-        result |> IO.inspect
+        result
     end
   end
 
@@ -73,6 +73,7 @@ defmodule Mssqlex.ODBC do
   """
   @spec start_link(binary(), Keyword.t()) :: {:ok, pid()}
   def start_link(conn_str, opts) do
+    opts = Keyword.put_new(opts, :show_sensitive_data_on_connection_error, true)
     case test_connection(conn_str, opts) do
       {:ok, connect_opts} ->
         GenServer.start_link(__MODULE__, connect_opts)
@@ -100,9 +101,13 @@ defmodule Mssqlex.ODBC do
           | {:error, Exception.t()}
   def query(pid, statement, params, opts) do
     if Process.alive?(pid) do
+      statement =
+        statement
+        |> IO.iodata_to_binary()
+        |> String.replace(~r/\$\d+/, "?")
       GenServer.call(
         pid,
-        {:query, %{statement: IO.iodata_to_binary(statement), params: params}},
+        {:query, %{statement: statement, params: params}},
         Keyword.get(opts, :timeout, 5000)
       )
     else
@@ -167,14 +172,9 @@ defmodule Mssqlex.ODBC do
   end
 
   @doc false
-  def handle_call(
-        {:query, %{statement: statement, params: params}},
-        _from,
-        state
-      ) do
-    {:reply,
-     handle_errors(:odbc.param_query(state, to_charlist(statement), params)),
-     state}
+  def handle_call({:query, %{statement: statement, params: params}}, _from, state) do
+    result = :odbc.param_query(state, to_charlist(statement), params)
+    {:reply, handle_errors(result), state}
   end
 
   @doc false

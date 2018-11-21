@@ -10,6 +10,8 @@ defmodule Mssqlex do
   alias Mssqlex.Query
   alias Mssqlex.Type
 
+  @type conn :: DBConnection.conn
+
   @doc """
   Connect to a MS SQL Server using ODBC.
 
@@ -101,30 +103,75 @@ defmodule Mssqlex do
       supported due to adapter limitations. Select statements for columns
       of these types must convert them to supported types (e.g. varchar).
   """
-  @spec query(pid(), binary(), [Type.param()], Keyword.t()) ::
-          {:ok, iodata(), Mssqlex.Result.t()}
+
+  @spec query(conn, iodata, list, Keyword.t()) :: {:ok, Mssqlex.Result.t()} | {:error, Exception.t()}
   def query(conn, statement, params, opts \\ []) do
-    DBConnection.prepare_execute(
-      conn,
-      %Query{name: "", statement: statement},
-      params,
-      opts
-    )
+    if name = Keyword.get(opts, :cache_statement) do
+      query = %Query{name: name, cache: :statement, statement: IO.iodata_to_binary(statement)}
+
+      case DBConnection.prepare_execute(conn, query, params, opts) do
+        {:ok, _, result} ->
+          {:ok, result}
+
+        {:error, %Mssqlex.NewError{mssql: %{code: :feature_not_supported}}} = error->
+          with %DBConnection{} <- conn,
+               :error <- DBConnection.status(conn) do
+            error
+          else
+            _ -> query_prepare_execute(conn, query, params, opts)
+          end
+
+        {:error, _} = error ->
+          error
+      end
+    else
+      query_prepare_execute(conn, %Query{name: "", statement: statement}, params, opts)
+    end
+  end
+
+  defp query_prepare_execute(conn, query, params, opts) do
+    case DBConnection.prepare_execute(conn, query, params, opts) do
+      {:ok, _, result} -> {:ok, result}
+      {:error, _} = error -> error
+    end
+  end
+
+  @spec prepare_execute(conn, iodata, iodata, list, Keyword.t) ::
+    {:ok, Mssqlex.Query.t, Mssqlex.Result.t} | {:error, Mssqlex.Error.t}
+  def prepare_execute(conn, name, statement, params, opts \\ []) do
+    query = %Query{name: name, statement: statement}
+    DBConnection.prepare_execute(conn, query, params, opts)
   end
 
   @doc """
-  Executes a query against an MS SQL Server with ODBC.
-
-  Raises an error on failure. See `query/4` for details.
+  Prepares and runs a query and returns the result or raises
+  `Mssqlex.Error` if there was an error. See `prepare_execute/5`.
   """
-  @spec query!(pid(), binary(), [Type.param()], Keyword.t()) ::
-          {iodata(), Mssqlex.Result.t()}
+  @spec prepare_execute!(conn, iodata, iodata, list, Keyword.t) ::
+    {Mssqlex.Query.t, Mssqlex.Result.t}
+  def prepare_execute!(conn, name, statement, params, opts \\ []) do
+    query = %Query{name: name, statement: statement}
+    DBConnection.prepare_execute!(conn, query, params, opts)
+  end
+
+  @doc """
+  Runs an (extended) query and returns the result or raises `Mssqlex.Error` if
+  there was an error. See `query/3`.
+  """
+  @spec query!(conn, iodata, list, Keyword.t()) :: Mssqlex.Result.t()
   def query!(conn, statement, params, opts \\ []) do
-    DBConnection.prepare_execute!(
-      conn,
-      %Query{name: "", statement: statement},
-      params,
-      opts
-    )
+    case query(conn, statement, params, opts) do
+      {:ok, result} -> result
+      {:error, err} -> raise err
+    end
+  end
+
+  @doc """
+  Returns a supervisor child specification for a DBConnection pool.
+  """
+  @spec child_spec(Keyword.t) :: Supervisor.Spec.spec
+  def child_spec(opts) do
+    opts = Mssqlex.Utils.default_opts(opts)
+    DBConnection.child_spec(Mssqlex.Protocol, opts)
   end
 end

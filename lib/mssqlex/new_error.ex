@@ -40,9 +40,9 @@ defmodule Mssqlex.NewError do
   def exception(opts) do
     mssql =
       if fields = Keyword.get(opts, :mssql) do
-        code = fields.code
-        message = fields.message
-        driver = build_driver(fields.driver)
+        code = Keyword.get(fields, :code, :feature_not_supported)
+        message = Keyword.get(fields, :message, "No message provided!")
+        driver = fields |> Keyword.get(:driver) |> build_driver()
 
         fields
         |> Map.put(:mssql_code, to_string(code))
@@ -61,11 +61,11 @@ defmodule Mssqlex.NewError do
       IO.iodata_to_binary([
         # map.severity,
         # ?\s,
-        map.mssql_code,
+        Map.get(map, :mssql_code, "feature_not_supported"),
         ?\s,
         [?(, Atom.to_string(map.code), ?)],
         ?\s,
-        map.message,
+        Map.get(map, :message, "No message provided!"),
         # build_query(e.query),
         # build_metadata(map),
         # build_detail(map)

@@ -116,4 +116,5 @@ defmodule Mssqlex.ErrorCode do
   def code_to_name('IM013'), do: :trace_file_error
   def code_to_name('IM014'), do: :invalid_name_of_file_dsn
   def code_to_name('IM015'), do: :corrupt_file_data_source
+  def code_to_name(_), do: :feature_not_supported
 end
