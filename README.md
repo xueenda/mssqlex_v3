@@ -38,10 +38,18 @@ Tests require an instance of SQL Server to be running on `localhost` and a valid
 UID and password to be set in the `MSSQL_UID` and `MSSQL_PWD` environment
 variables, respectively.
 
+You can create `.env` file and set all required environment variables
+```bash
+export MSSQL_UID=sa
+export MSSQL_PWD='sa_5ecretpa$$'
+```
+
 The easiest way to get an instance running is to use the SQL Server Docker image:
 
 ```sh
-export MSSQL_UID=sa
-export MSSQL_PWD='ThePa$$word'
-docker run -e 'ACCEPT_EULA=Y' -e SA_PASSWORD=$MSSQL_PWD -p 1433:1433 -d microsoft/mssql-server-linux
+docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=$MSSQL_PWD' -p 1433:1433 -d microsoft/mssql-server-linux:2017-latest
 ```
+
+### Testing info
+
+Maintenance DB - `master`

@@ -10,6 +10,7 @@
 erl_crash.dump
 *.ez
 *.beam
+.env
 
 ### Elixir Patch ###
 ### Emacs ###

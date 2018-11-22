@@ -46,8 +46,7 @@ defmodule Mssqlex.Protocol do
   def connect(opts) do
     opts = Keyword.put_new(opts, :connect_timeout, 5_000)
 
-    server_address =
-      opts[:hostname] || System.get_env("MSSQL_HST") || "localhost"
+    server_address = opts[:hostname] || System.get_env("MSSQL_HST") || "localhost"
 
     instance_name = opts[:instance_name] || System.get_env("MSSQL_IN")
     port = opts[:port] || System.get_env("MSSQL_PRT")

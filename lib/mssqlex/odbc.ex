@@ -73,7 +73,7 @@ defmodule Mssqlex.ODBC do
   """
   @spec start_link(binary(), Keyword.t()) :: {:ok, pid()}
   def start_link(conn_str, opts) do
-    opts = Keyword.put_new(opts, :show_sensitive_data_on_connection_error, true)
+    # opts = Keyword.put_new(opts, :show_sensitive_data_on_connection_error, true)
     case test_connection(conn_str, opts) do
       {:ok, connect_opts} ->
         GenServer.start_link(__MODULE__, connect_opts)

@@ -40,9 +40,9 @@ defmodule Mssqlex.NewError do
   def exception(opts) do
     mssql =
       if fields = Keyword.get(opts, :mssql) do
-        code = Keyword.get(fields, :code, :feature_not_supported)
-        message = Keyword.get(fields, :message, "No message provided!")
-        driver = fields |> Keyword.get(:driver) |> build_driver()
+        code = Map.get(fields, :code, :feature_not_supported)
+        message = Map.get(fields, :message, "No message provided!")
+        driver = fields |> Map.get(:driver) |> build_driver()
 
         fields
         |> Map.put(:mssql_code, to_string(code))

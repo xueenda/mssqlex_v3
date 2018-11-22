@@ -113,7 +113,8 @@ defmodule Mssqlex.Type do
            :unicode.characters_to_binary(value, :unicode, {:utf16, :little}) do
       {{:sql_wvarchar, byte_size(value)}, [utf16]}
     else
-      _ -> raise %Mssqlex.Error{message: "failed to convert string to UTF16LE"}
+      _ ->
+        raise Mssqlex.NewError.exception(message: "failed to convert string to UTF16LE")
     end
   end
 
@@ -122,9 +123,7 @@ defmodule Mssqlex.Type do
   end
 
   def encode(value, _) do
-    raise %Mssqlex.Error{
-      message: "could not parse param #{inspect(value)} of unrecognised type."
-    }
+    raise Mssqlex.NewError.exception(message: "could not parse param #{inspect(value)} of unrecognised type.")
   end
 
   @doc """

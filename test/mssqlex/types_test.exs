@@ -1,74 +1,67 @@
 defmodule Mssqlex.TypesTest do
   use ExUnit.Case, async: true
 
-  alias Mssqlex.Result
+  alias Mssqlex.Result, as: R
 
-  setup_all do
-    {:ok, pid} = Mssqlex.start_link([])
-    # {:ok, pid} = Mssqlex.start_link([hostname: "192.168.1.50", username: "sa", password: "sa_5ecretpa$$", database: "ecto_test"])
-    Mssqlex.query!(pid, "DROP DATABASE IF EXISTS types_test;", [])
+  import Mssqlex.TestHelper
 
-    {:ok, _} =
-      Mssqlex.query(
-        pid,
-        "CREATE DATABASE types_test COLLATE Latin1_General_CS_AS_KS_WS;",
-        []
-      )
-
-    {:ok, [pid: pid]}
+  setup context do
+    {:ok, pid} = Mssqlex.start_link(Mssqlex.TestHelper.default_opts)
+    {:ok, [pid: pid, test: context[:test]]}
   end
 
-  test "char", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["Nathan"]]} == act(pid, "char(6)", ["Nathan"])
+  test "char", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["Nathan"]]} ==
+      insert_and_execute(context, "char(6)", ["Nathan"])
   end
 
-  test "nchar", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["e→øæ"]]} ==
-             act(pid, "nchar(4)", ["e→øæ"])
+  test "nchar", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["e→øæ"]]} ==
+      insert_and_execute(context, "nchar(4)", ["e→øæ"])
   end
 
-  test "nchar with preserved encoding", %{pid: pid} do
+  test "nchar with preserved encoding", context do
     expected = :unicode.characters_to_binary("e→ø", :unicode, {:utf16, :little})
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[expected]]} ==
-             act(pid, "nchar(3)", ["e→ø"], preserve_encoding: true)
+    assert %R{num_rows: 1, columns: ["test"], rows: [[expected]]} ==
+             insert_and_execute(context, "nchar(3)", ["e→ø"], preserve_encoding: true)
   end
 
-  test "varchar", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["Nathan"]]} ==
-             act(pid, "varchar(6)", ["Nathan"])
+  test "varchar", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["Nathan"]]} ==
+             insert_and_execute(context, "varchar(6)", ["Nathan"])
   end
 
-  test "varchar with unicode characters", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["Nathan Molnár"]]} ==
-             act(pid, "varchar(15)", ["Nathan Molnár"])
+  test "varchar with unicode characters", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["Nathan Molnár"]]} ==
+             insert_and_execute(context, "varchar(15)", ["Nathan Molnár"])
   end
 
-  test "nvarchar", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["e→øæ"]]} ==
-             act(pid, "nvarchar(4)", ["e→øæ"])
+  test "nvarchar", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["e→øæ"]]} ==
+             insert_and_execute(context, "nvarchar(4)", ["e→øæ"])
   end
 
-  test "nvarchar with preserved encoding", %{pid: pid} do
+  test "nvarchar with preserved encoding", context do
     expected = :unicode.characters_to_binary("e→ø", :unicode, {:utf16, :little})
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[expected]]} ==
-             act(pid, "nvarchar(3)", ["e→ø"], preserve_encoding: true)
+    assert %R{num_rows: 1, columns: ["test"], rows: [[expected]]} ==
+             insert_and_execute(context, "nvarchar(3)", ["e→ø"], preserve_encoding: true)
   end
 
-  test "numeric(9, 0) as integer", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[123_456_789]]} ==
-             act(pid, "numeric(9)", [123_456_789])
+  test "numeric(9, 0) as integer", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[123_456_789]]} ==
+             insert_and_execute(context, "numeric(9)", [123_456_789])
   end
 
-  test "numeric(8, 0) as decimal", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[12_345_678]]} ==
-             act(pid, "numeric(8)", [Decimal.new(12_345_678)])
+  test "numeric(8, 0) as decimal", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[12_345_678]]} ==
+             insert_and_execute(context, "numeric(8)", [Decimal.new(12_345_678)])
   end
 
-  test "numeric(15, 0) as decimal", %{pid: pid} do
+  test "numeric(15, 0) as decimal", context do
     number = Decimal.new("123456789012345")
-    result = act(pid, "numeric(15)", [number])
+    result = insert_and_execute(context, "numeric(15)", [number])
     [[result_number]] = result.rows
 
     assert result.num_rows == 1
@@ -76,41 +69,37 @@ defmodule Mssqlex.TypesTest do
     assert Decimal.equal?(number, result_number)
   end
 
-  test "numeric(38, 0) as decimal", %{pid: pid} do
+  test "numeric(38, 0) as decimal", context do
     number = "12345678901234567890123456789012345678"
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "numeric(38)", [Decimal.new(number)])
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} ==
+             insert_and_execute(context, "numeric(38)", [Decimal.new(number)])
   end
 
-  test "numeric(36, 0) as string", %{pid: pid} do
+  test "numeric(36, 0) as string", context do
     number = "123456789012345678901234567890123456"
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "numeric(36)", [number])
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} ==
+             insert_and_execute(context, "numeric(36)", [number])
   end
 
-  test "numeric(5, 2) as decimal", %{pid: pid} do
+  test "numeric(5, 2) as decimal", context do
     number = Decimal.new("123.45")
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "numeric(5,2)", [number])
-
-    # assert Decimal.equal?(number, value)
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} ==
+             insert_and_execute(context, "numeric(5,2)", [number])
   end
 
-  test "numeric(6, 3) as float", %{pid: pid} do
+  test "numeric(6, 3) as float", context do
     number = Decimal.new("123.456")
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "numeric(6,3)", [123.456])
-
-    # assert Decimal.equal?(number, value)
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} ==
+             insert_and_execute(context, "numeric(6,3)", [123.456])
   end
 
-  test "real as decimal", %{pid: pid} do
+  test "real as decimal", context do
     number = Decimal.new("123.45")
-    result = act(pid, "real", [number])
+    result = insert_and_execute(context, "real", [number])
     [[result_number]] = result.rows
 
     assert result.num_rows == 1
@@ -118,218 +107,151 @@ defmodule Mssqlex.TypesTest do
     assert Decimal.equal?(number, Decimal.round(result_number, 2))
   end
 
-  test "float as decimal", %{pid: pid} do
+  test "float as decimal", context do
     number = Decimal.new("123.45")
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "float", [number])
-
-    # assert Decimal.equal?(number, Decimal.round(value, 2))
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} ==
+             insert_and_execute(context, "float", [number])
   end
 
-  test "double as decimal", %{pid: pid} do
+  test "double as decimal", context do
     number = Decimal.new("1.12345678901234")
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "double precision", [number])
-
-    # assert Decimal.equal?(number, value)
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} == insert_and_execute(context, "double precision", [number])
   end
 
-  test "money as decimal", %{pid: pid} do
+  test "money as decimal", context do
     number = Decimal.new("1000000.45")
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["1000000.4500"]]} ==
-             act(pid, "money", [number])
+    assert %R{num_rows: 1, columns: ["test"], rows: [["1000000.4500"]]} ==
+             insert_and_execute(context, "money", [number])
   end
 
-  test "smallmoney as decimal", %{pid: pid} do
+  test "smallmoney as decimal", context do
     number = Decimal.new("123.45")
 
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[number]]} ==
-             act(pid, "smallmoney", [number])
-
-    # assert Decimal.equal?(number, value)
+    assert %R{num_rows: 1, columns: ["test"], rows: [[number]]} ==
+             insert_and_execute(context, "smallmoney", [number])
   end
 
-  test "bigint", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["-9223372036854775808"]]} ==
-             act(pid, "bigint", [-9_223_372_036_854_775_808])
+  test "bigint", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["-9223372036854775808"]]} ==
+             insert_and_execute(context, "bigint", [-9_223_372_036_854_775_808])
   end
 
-  test "int", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[2_147_483_647]]} ==
-             act(pid, "int", [2_147_483_647])
+  test "int", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[2_147_483_647]]} ==
+             insert_and_execute(context, "int", [2_147_483_647])
   end
 
-  test "smallint", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[32_767]]} ==
-             act(pid, "smallint", [32_767])
+  test "smallint", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[32_767]]} ==
+             insert_and_execute(context, "smallint", [32_767])
   end
 
-  test "tinyint", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[255]]} ==
-             act(pid, "tinyint", [255])
+  test "tinyint", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[255]]} ==
+             insert_and_execute(context, "tinyint", [255])
   end
 
-  test "smalldatetime as tuple", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[{{2017, 1, 1}, {12, 10, 0, 0}}]]} ==
-             act(pid, "smalldatetime", [{{2017, 1, 1}, {12, 10, 0, 0}}])
+  test "smalldatetime as tuple", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[{{2017, 1, 1}, {12, 10, 0, 0}}]]} ==
+             insert_and_execute(context, "smalldatetime", [{{2017, 1, 1}, {12, 10, 0, 0}}])
   end
 
-  test "datetime as tuple", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[{{2017, 1, 1}, {12, 10, 0, 0}}]]} ==
-             act(pid, "datetime", [{{2017, 1, 1}, {12, 10, 0, 0}}])
+  test "datetime as tuple", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[{{2017, 1, 1}, {12, 10, 0, 0}}]]} ==
+             insert_and_execute(context, "datetime", [{{2017, 1, 1}, {12, 10, 0, 0}}])
   end
 
-  test "datetime2 as tuple", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[{{2017, 1, 1}, {12, 10, 0, 0}}]]} ==
-             act(pid, "datetime2", [{{2017, 1, 1}, {12, 10, 0, 0}}])
+  test "datetime2 as tuple", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[{{2017, 1, 1}, {12, 10, 0, 0}}]]} ==
+             insert_and_execute(context, "datetime2", [{{2017, 1, 1}, {12, 10, 0, 0}}])
   end
 
-  test "date as tuple", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [["2017-01-01"]]} ==
-             act(pid, "date", [{2017, 1, 1}])
+  test "date as tuple", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [["2017-01-01"]]} ==
+             insert_and_execute(context, "date", [{2017, 1, 1}])
   end
 
-  test "time as tuple", %{pid: pid} do
-    do_act = fn pid, type, params ->
-      Mssqlex.query!(pid, "CREATE TABLE #{table_name(type)} (test #{type})", [])
-      Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} VALUES (?)", params)
+  test "time as tuple", context do
+    insert(context, "time(6)", [{12, 10, 0, 54}])
 
-      Mssqlex.query!(
-        pid,
-        "SELECT CONVERT(nvarchar(15), test, 21) FROM #{table_name(type)}",
-        []
-      )
-    end
-
-    assert %Result{num_rows: 1, columns: [""], rows: [["12:10:00.000054"]]} ==
-             do_act.(pid, "time(6)", [{12, 10, 0, 54}])
+    assert %R{num_rows: 1, columns: [""], rows: [["12:10:00.000054"]]} ==
+      query("SELECT CONVERT(nvarchar(15), test, 21) FROM #{table_name("time(6)")}")
   end
 
-  test "bit", %{pid: pid} do
-    assert %Result{num_rows: 1, columns: ["test"], rows: [[true]]} == act(pid, "bit", [true])
+  test "bit", context do
+    assert %R{num_rows: 1, columns: ["test"], rows: [[true]]} ==
+      insert_and_execute(context, "bit", [true])
   end
 
-  test "uniqueidentifier", %{pid: pid} do
-    do_act = fn pid, type, params ->
-      Mssqlex.query!(pid, "CREATE TABLE #{table_name(type)} (test #{type})", [])
-      Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} VALUES (?)", params)
+  test "uniqueidentifier", context do
+    insert(context, "uniqueidentifier", ["6F9619FF-8B86-D011-B42D-00C04FC964FF"])
 
-      Mssqlex.query!(
-        pid,
-        "SELECT CONVERT(char(36), test) FROM #{table_name(type)}",
-        []
-      )
-    end
-
-    assert %Result{num_rows: 1, columns: [""], rows: [["6F9619FF-8B86-D011-B42D-00C04FC964FF"]]} ==
-             do_act.(pid, "uniqueidentifier", [
-               "6F9619FF-8B86-D011-B42D-00C04FC964FF"
-             ])
+    assert %R{num_rows: 1, columns: [""], rows: [["6F9619FF-8B86-D011-B42D-00C04FC964FF"]]} ==
+      query("SELECT CONVERT(char(36), test) FROM #{table_name("uniqueidentifier")}")
   end
 
-  test "rowversion", %{pid: pid} do
+  test "rowversion", context do
     type = "rowversion"
 
-    Mssqlex.query!(
-      pid,
-      "CREATE TABLE #{table_name(type)} (test #{type}, num int)",
-      []
-    )
+    %R{} = query("CREATE TABLE #{table_name(type)} (test #{type}, num int)")
+    %R{} = query("INSERT INTO #{table_name(type)} (num) VALUES (?)", [1])
+    %R{} = query("INSERT INTO #{table_name(type)} (num) VALUES (?)", [1])
 
-    Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} (num) VALUES (?)", [1])
-    Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} (num) VALUES (?)", [2])
-
-    assert %Result{num_rows: 2, columns: [""], rows: [[2001], [2002]]} ==
-             Mssqlex.query!(
-               pid,
-               "SELECT CONVERT(int, test) FROM #{table_name(type)}",
-               []
-             )
+    assert %R{num_rows: 2, columns: [""], rows: [[2001], [2002]]} ==
+             query("SELECT CONVERT(int, test) FROM #{table_name(type)}")
   end
 
-  test "binary", %{pid: pid} do
-    do_act = fn pid, type, params ->
-      Mssqlex.query!(pid, "CREATE TABLE #{table_name(type)} (test #{type})", [])
-      Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} VALUES (?)", params)
+  test "binary", context do
+    insert(context, "binary", [255])
 
-      Mssqlex.query!(
-        pid,
-        "SELECT CONVERT(int, test) FROM #{table_name(type)}",
-        []
-      )
-    end
-
-    assert %Result{num_rows: 1, columns: [""], rows: [[255]]} == do_act.(pid, "binary", [255])
+    assert %R{num_rows: 1, columns: [""], rows: [[255]]} ==
+      query("SELECT CONVERT(int, test) FROM #{table_name("binary")}")
   end
 
-  test "varbinary", %{pid: pid} do
-    do_act = fn pid, type, params ->
-      Mssqlex.query!(pid, "CREATE TABLE #{table_name(type)} (test #{type})", [])
-      Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} VALUES (?)", params)
+  test "varbinary", context do
+    insert(context, "varbinary", [255])
 
-      Mssqlex.query!(
-        pid,
-        "SELECT CONVERT(int, test) FROM #{table_name(type)}",
-        []
-      )
-    end
-
-    assert %Result{num_rows: 1, columns: [""], rows: [[255]]} == do_act.(pid, "varbinary", [255])
+    assert %R{num_rows: 1, columns: [""], rows: [[255]]} == 
+      query("SELECT CONVERT(int, test) FROM #{table_name("varbinary")}")
   end
 
-  test "null", %{pid: pid} do
+  test "null", context do
     type = "char(13)"
 
-    Mssqlex.query!(
-      pid,
-      "CREATE TABLE #{table_name(type)} (test #{type}, num int)",
-      []
-    )
+    %R{} = query("CREATE TABLE #{table_name(type)} (test #{type}, num int)")
+    %R{} = query("INSERT INTO #{table_name(type)} (num) VALUES (?)", [2])
 
-    Mssqlex.query!(pid, "INSERT INTO #{table_name(type)} (num) VALUES (?)", [2])
-
-    assert %Result{num_rows: 1, columns: [""], rows: [[nil]]} ==
-             Mssqlex.query!(
-               pid,
-               "SELECT CONVERT(int, test) FROM #{table_name(type)}",
-               []
-             )
+    assert %R{num_rows: 1, columns: [""], rows: [[nil]]} == 
+      query("SELECT CONVERT(int, test) FROM #{table_name(type)}")
   end
 
-  test "invalid input type", %{pid: pid} do
-    assert_raise Mssqlex.Error, ~r/unrecognised type/, fn ->
-      act(pid, "char(10)", [{"Nathan"}])
+  test "invalid input type", context do
+    assert_raise Mssqlex.NewError, ~r/unrecognised type/, fn ->
+      insert_and_execute(context, "char(10)", [{"Nathan"}])
     end
   end
 
-  test "invalid input binary", %{pid: pid} do
-    assert_raise Mssqlex.Error, ~r/failed to convert/, fn ->
-      act(pid, "char(12)", [<<110, 0, 200>>])
+  test "invalid input binary", context do
+    assert_raise Mssqlex.NewError, ~r/failed to convert/, fn ->
+      insert_and_execute(context, "char(12)", [<<110, 0, 200>>])
     end
   end
 
   defp table_name(type) do
-    ~s(types_test.dbo."#{Base.url_encode64(type)}")
+    database = Mssqlex.TestHelper.default_opts[:database]
+    ~s(#{database}.dbo."#{Base.url_encode64(type)}")
   end
 
-  defp act(pid, type, params, opts \\ []) do
-    Mssqlex.query!(
-      pid,
-      "CREATE TABLE #{table_name(type)} (test #{type})",
-      [],
-      opts
-    )
+  defp insert(context, type, params, opts \\ []) do
+    %R{} = query("CREATE TABLE #{table_name(type)} (test #{type})", [], opts)
+    %R{} = query("INSERT INTO #{table_name(type)} VALUES (?)", params, opts)
+  end
 
-    Mssqlex.query!(
-      pid,
-      "INSERT INTO #{table_name(type)} VALUES (?)",
-      params,
-      opts
-    )
-
-    Mssqlex.query!(pid, "SELECT * FROM #{table_name(type)}", [], opts)
+  defp insert_and_execute(context, type, params, opts \\ []) do
+    insert(context, type, params, opts)
+    query("SELECT * FROM #{table_name(type)}", [], opts)
   end
 end
