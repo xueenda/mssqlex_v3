@@ -1,7 +1,9 @@
 defmodule Mssqlex.LoginTest do
   use ExUnit.Case, async: false
 
-  alias Mssqlex.Result
+  alias Mssqlex.Result, as: R
+  import Mssqlex.TestHelper
+  import ExUnit.CaptureLog
 
   @check_encryption """
   SELECT encrypt_option
@@ -10,26 +12,33 @@ defmodule Mssqlex.LoginTest do
   """
 
   test "Given valid details, connects to database" do
-    assert {:ok, pid} = Mssqlex.start_link([])
+    {:ok, pid} = Mssqlex.start_link(Mssqlex.TestHelper.default_opts)
 
-    result = %Result{columns: [""], num_rows: 1, rows: [["test"]]}
-    assert {:ok, _, ^result} = Mssqlex.query(pid, "SELECT 'test'", [])
+    assert %R{columns: [""], num_rows: 1, rows: [["test"]]} ==
+      Mssqlex.query!(pid, "SELECT 'test'", [])
   end
 
   test "connects with encryption" do
-    assert {:ok, pid} =
-             Mssqlex.start_link(encrypt: true, trust_server_certificate: true)
+    conn_opts = 
+      default_opts()
+      |> Keyword.put(:encrypt, true)
+      |> Keyword.put(:trust_server_certificate, true)
+    {:ok, pid} = Mssqlex.start_link(conn_opts)
 
-    assert {:ok, _, %Result{num_rows: 1, rows: [["TRUE"]]}} =
-             Mssqlex.query(pid, @check_encryption, [])
+    assert %R{num_rows: 1, rows: [["TRUE"]], columns: ["encrypt_option"]} ==
+      Mssqlex.query!(pid, @check_encryption, [])
   end
 
   test "Given invalid details, errors" do
-    Process.flag(:trap_exit, true)
+    error_msg = "28000 (invalid_authorization_specification)"
 
-    assert {:ok, pid} = Mssqlex.start_link(password: "badpass")
+    conn_opts = 
+      default_opts()
+      |> Keyword.put(:password, "badpass")
 
-    assert_receive {:EXIT, ^pid,
-                    %Mssqlex.Error{odbc_code: :invalid_authorization}}
+    assert capture_log(fn ->
+      {:ok, _pid} = Mssqlex.start_link(conn_opts)
+      :timer.sleep(200)
+    end) =~ error_msg
   end
 end
