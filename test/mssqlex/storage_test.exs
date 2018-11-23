@@ -1,36 +1,37 @@
 defmodule Mssqlex.StorageTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
-  alias Mssqlex.Result
+  import Mssqlex.TestHelper
 
-  setup do
-    {:ok, pid} = Mssqlex.start_link([])
-    Mssqlex.query(pid, "DROP DATABASE storage_test", [])
-    {:ok, [pid: pid]}
+  alias Mssqlex.Result, as: R
+  alias Mssqlex.NewError, as: E
+
+  @test_db "mssqlex_test_db"
+
+  setup context do
+    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, [pid: pid, test: context[:test]]}
   end
 
-  test "can create and drop database", %{pid: pid} do
-    assert {:ok, _, %Result{}} =
-             Mssqlex.query(pid, "CREATE DATABASE storage_test", [])
+  test "Can create and drop db. Return error for existing or dropped db.", context do
+    %R{} = query("CREATE DATABASE #{@test_db}")
+    assert %E{
+      mssql: %{
+        code: :syntax_error_or_access_violation,
+        driver: nil,
+        message: "Database 'mssqlex_test_db' already exists. Choose a different database name.",
+        mssql_code: "42000"
+      }
+    } == query("CREATE DATABASE #{@test_db}")
 
-    assert {:ok, _, %Result{}} =
-             Mssqlex.query(pid, "DROP DATABASE storage_test", [])
-  end
-
-  test "returns correct error when dropping database that doesn't exist", %{
-    pid: pid
-  } do
-    assert {:error, %{odbc_code: :base_table_or_view_not_found}} =
-             Mssqlex.query(pid, "DROP DATABASE storage_test", [])
-  end
-
-  test "returns correct error when creating a database that already exists", %{
-    pid: pid
-  } do
-    assert {:ok, _, %Result{}} =
-             Mssqlex.query(pid, "CREATE DATABASE storage_test", [])
-
-    assert {:error, %{odbc_code: :database_already_exists}} =
-             Mssqlex.query(pid, "CREATE DATABASE storage_test", [])
+    %R{} = query("DROP DATABASE #{@test_db}")
+    assert %E{
+      mssql: %{
+        code: :base_table_or_view_not_found,
+        driver: nil,
+        message: "Cannot drop the database 'mssqlex_test_db', because it does not exist or you do not have permission.",
+        mssql_code: "42S02"
+      }
+    } == query("DROP DATABASE #{@test_db}")
   end
 end
