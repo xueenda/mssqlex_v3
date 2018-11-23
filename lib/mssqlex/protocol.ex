@@ -1,4 +1,16 @@
 defmodule Mssqlex.Protocol do
+# warning: function handle_deallocate/4 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
+  # lib/mssqlex/protocol.ex:1
+
+# warning: function handle_declare/4 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
+  # lib/mssqlex/protocol.ex:1
+
+# warning: function handle_fetch/4 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
+  # lib/mssqlex/protocol.ex:1
+
+# warning: function handle_status/2 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
+  # lib/mssqlex/protocol.ex:1
+
   @moduledoc """
   Implementation of `DBConnection` behaviour for `Mssqlex.ODBC`.
 
@@ -30,7 +42,7 @@ defmodule Mssqlex.Protocol do
   """
   @type state :: %__MODULE__{
           pid: pid(),
-          mssql: :idle | :transaction | :auto_commit,
+          mssql: DBConnection.status(),
           conn_opts: Keyword.t()
         }
 
@@ -76,16 +88,17 @@ defmodule Mssqlex.Protocol do
 
     case ODBC.start_link(conn_str, opts) do
       {:ok, pid} ->
-        {:ok,
-         %__MODULE__{
+        mode = 
+          if opts[:auto_commit] == :on do
+            :auto_commit
+          else 
+            :idle
+          end
+
+        {:ok, %__MODULE__{
            pid: pid,
            conn_opts: opts,
-           mssql:
-             if(
-               opts[:auto_commit] == :on,
-               do: :auto_commit,
-               else: :idle
-             )
+           mssql: mode
          }}
 
       error ->
@@ -156,6 +169,9 @@ defmodule Mssqlex.Protocol do
   @spec handle_commit(opts :: Keyword.t(), state) ::
           {:ok, result, state}
           | {:error | :disconnect, Exception.t(), state}
+  def handle_commit(opts, %{mssql: :error} = state) do
+    {:error, state}
+  end
   def handle_commit(opts, state) do
     case Keyword.get(opts, :mode, :transaction) do
       :transaction -> handle_transaction(:commit, opts, state)
@@ -245,7 +261,7 @@ defmodule Mssqlex.Protocol do
   @spec handle_prepare(query, opts :: Keyword.t(), state) ::
           {:ok, query, state}
           | {:error | :disconnect, Exception.t(), state}
-  def handle_prepare(query, _opts, state) do
+  def handle_prepare(query, opts, state) do
     {:ok, query, state}
   end
 
@@ -270,7 +286,10 @@ defmodule Mssqlex.Protocol do
               {status, query, message, post_connect_state}
             end
         end
-      {:error, error, new_state} -> {:error, error, new_state}
+      {:error, error, %{mssql: :transaction} = new_state} ->
+        {:error, error, %{new_state | mssql: :error}}
+      {:error, error, new_state} ->
+        {:error, error, new_state}
     end
 
   end
@@ -278,7 +297,7 @@ defmodule Mssqlex.Protocol do
   defp do_query(query, params, opts, state) do
     opts = [{:timeout, 15_000} | opts]
     case ODBC.query(state.pid, query.statement, params, opts) do
-      {:error, %NewError{mssql: %{code: :syntax_error_or_access_violation, mssql_code: "42000"}} = reason} ->
+      {:error, %NewError{mssql: %{code: :not_allowed_in_transaction}} = reason} ->
         if state.mssql == :auto_commit do
           {:error, reason, state}
         else
@@ -318,6 +337,12 @@ defmodule Mssqlex.Protocol do
     {:ok, %Result{}, state}
   end
 
+
+  @spec handle_status(opts :: Keyword.t(), state :: any()) ::
+        {:idle | :transaction | :error, new_state :: any()}
+        | {:disconnect, Exception.t(), new_state :: any()}
+  def handle_status(_, %{mssql: mssql} = state), do: {mssql, state}
+
   def ping(state) do
     query = %Mssqlex.Query{name: "ping", statement: "SELECT 1"}
 
@@ -327,6 +352,7 @@ defmodule Mssqlex.Protocol do
       other -> other
     end
   end
+
 
   # @spec handle_declare(query, params, opts :: Keyword.t, state) ::
   #   {:ok, cursor, state} |

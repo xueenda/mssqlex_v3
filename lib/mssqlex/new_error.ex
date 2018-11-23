@@ -7,37 +7,21 @@ defmodule Mssqlex.NewError do
     or the string representation of the code if it cannot be translated.
   """
 
-  # defexception [:mssql, :message, :odbc_code, constraint_violations: []]
-
   defexception [:message, :mssql, :connection_id, :query]
 
   @type t :: %Mssqlex.NewError{}
-  # @type t :: %__MODULE__{
-          # mssql: map(),
-          # message: binary(),
-          # odbc_code: atom() | binary(),
-          # constraint_violations: Keyword.t()
-        # }
-
-  # @not_allowed_in_transaction_messages [226, 574]
-
-  # @doc false
-  # @spec exception({binary()) :: t()
-  # def exception({odbc_code, native_code, reason} = message) do
-    # %__MODULE__{
-      # message:
-        # to_string(reason) <>
-          # " | ODBC_CODE " <>
-          # to_string(odbc_code) <>
-          # " | SQL_SERVER_CODE " <> to_string(native_code),
-      # odbc_code: get_code(message),
-      # constraint_violations: get_constraint_violations(to_string(reason))
-    # }
-  # end
 
   @doc false
   @spec exception({list(), integer(), list()}) :: t()
-  def exception({odbc_code, _native_code, reason}) do
+  def exception({_odbc_code, 574, reason}) do
+    exception([mssql: %{code: :not_allowed_in_transaction, message: reason}])
+  end
+
+  def exception({_odbc_code, 226, reason}) do
+    exception([mssql: %{code: :not_allowed_in_transaction, message: reason}])
+  end
+
+  def exception({odbc_code, native_code, reason}) do
     exception([mssql: %{code: odbc_code, message: reason}])
   end
 

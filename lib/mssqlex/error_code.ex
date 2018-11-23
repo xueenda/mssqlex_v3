@@ -19,12 +19,12 @@ defmodule Mssqlex.ErrorCode do
   def code_to_name('07006'), do: :restricted_data_type_attribute_violation
   def code_to_name('07009'), do: :invalid_descriptor_index
   def code_to_name('07S01'), do: :invalid_use_of_default_parameter
-  def code_to_name('08001'), do: :client_unable_to_establish_connection
-  def code_to_name('08002'), do: :connection_name_in_use
-  def code_to_name('08003'), do: :connection_not_open
-  def code_to_name('08004'), do: :server_rejected_the_connection
-  def code_to_name('08007'), do: :connection_failure_during_transaction
-  def code_to_name('08S01'), do: :communication_link_failure
+  def code_to_name('08001'), do: :connection_exception # :client_unable_to_establish_connection
+  def code_to_name('08002'), do: :connection_exception # :connection_name_in_use
+  def code_to_name('08003'), do: :connection_exception # :connection_not_open
+  def code_to_name('08004'), do: :connection_exception # :server_rejected_the_connection
+  def code_to_name('08007'), do: :connection_exception # :connection_failure_during_transaction
+  def code_to_name('08S01'), do: :connection_exception # :communication_link_failure
   def code_to_name('21S01'), do: :insert_value_list_does_not_match_column_list
   def code_to_name('21S02'), do: :degree_of_derived_table_does_not_match_column_list
   def code_to_name('22001'), do: :string_data_right_truncated
@@ -116,5 +116,6 @@ defmodule Mssqlex.ErrorCode do
   def code_to_name('IM013'), do: :trace_file_error
   def code_to_name('IM014'), do: :invalid_name_of_file_dsn
   def code_to_name('IM015'), do: :corrupt_file_data_source
+  def code_to_name(:not_allowed_in_transaction), do: :not_allowed_in_transaction
   def code_to_name(_), do: :feature_not_supported
 end
