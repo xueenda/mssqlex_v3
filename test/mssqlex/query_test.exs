@@ -1,126 +1,62 @@
 defmodule Mssqlex.QueryTest do
   use ExUnit.Case, async: true
 
-  alias Mssqlex.Result
+  import Mssqlex.TestHelper
 
-  setup_all do
-    {:ok, pid} = Mssqlex.start_link([])
-    Mssqlex.query!(pid, "DROP DATABASE IF EXISTS query_test;", [])
-    {:ok, _, _} = Mssqlex.query(pid, "CREATE DATABASE query_test;", [])
+  alias Mssqlex.Result, as: R
 
-    {:ok, [pid: pid]}
+  setup context do
+    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, [pid: pid, test: context[:test]]}
   end
 
-  test "simple select", %{pid: pid} do
-    assert {:ok, _, %Result{}} =
-             Mssqlex.query(
-               pid,
-               "CREATE TABLE query_test.dbo.simple_select (name varchar(50));",
-               []
-             )
+  test "simple select", context do
+    %R{} = query("CREATE TABLE #{table_name()} (name varchar(50))")
+    %R{num_rows: 1} = query("INSERT INTO #{table_name()} VALUES ('Steven')")
+    result = query("SELECT * FROM #{table_name()}")
 
-    assert {:ok, _, %Result{num_rows: 1}} =
-             Mssqlex.query(
-               pid,
-               ["INSERT INTO query_test.dbo.simple_select VALUES ('Steven');"],
-               []
-             )
-
-    assert {:ok, _, %Result{columns: ["name"], num_rows: 1, rows: [["Steven"]]}} =
-             Mssqlex.query(
-               pid,
-               "SELECT * FROM query_test.dbo.simple_select;",
-               []
-             )
+    assert %R{columns: ["name"], num_rows: 1, rows: [["Steven"]]} == result
   end
 
-  # test "parametrized queries", %{pid: pid} do
-    # assert {:ok, _, %Result{}} =
-             # Mssqlex.query(
-               # pid,
-               # "CREATE TABLE query_test.dbo.parametrized_query" <>
-                 # "(id int, name varchar(50), joined datetime2);",
-               # []
-             # )
+  test "parametrized queries", context do
+    %R{} = query("CREATE TABLE #{table_name()} (id int, name varchar(50), joined datetime2)")
+    %R{num_rows: 1} = query(
+      "INSERT INTO #{table_name()} VALUES (?, ?, ?);",
+      [1, "Jae", "2017-01-01 12:01:01.3450000"]
+    )
+    result = query("SELECT * FROM #{table_name()}")
 
-    # assert {:ok, _, %Result{num_rows: 1}} =
-             # Mssqlex.query(
-               # pid,
-               # [
-                 # "INSERT INTO query_test.dbo.parametrized_query VALUES (?, ?, ?);"
-               # ],
-               # [1, "Jae", "2017-01-01 12:01:01.3450000"]
-             # )
+    assert %R{
+      columns: ["id", "name", "joined"],
+      num_rows: 1,
+      rows: [[1, "Jae", {{2017, 1, 1}, {12, 1, 1, 0}}]]
+    } == result
+  end
 
-    # assert {:ok, _,
-            # %Result{
-              # columns: ["id", "name", "joined"],
-              # num_rows: 1,
-              # rows: [[1, "Jae", _]]
-            # }} =
-             # Mssqlex.query(
-               # pid,
-               # "SELECT * FROM query_test.dbo.parametrized_query;",
-               # []
-             # )
-  # end
+  test "select where in", context do
+    %R{} = query("CREATE TABLE #{table_name()} (name varchar(50), age int)")
+    %R{num_rows: 1} = query("INSERT INTO #{table_name()} VALUES (?, ?)", ["Dexter", 34])
+    %R{num_rows: 1} = query("INSERT INTO #{table_name()} VALUES (?, ?)", ["Malcolm", 41])
 
-  # test "select where in", %{pid: pid} do
-    # assert {:ok, _, %Result{}} =
-             # Mssqlex.query(
-               # pid,
-               # "CREATE TABLE query_test.dbo.select_where_in (name varchar(50), age int);",
-               # []
-             # )
+    result = query("SELECT * FROM #{table_name()} WHERE name IN (?, ?)", ["Dexter", "Malcolm"])
+    assert %R{
+      columns: ["name", "age"],
+      num_rows: 2,
+      rows: [["Dexter", 34], ["Malcolm", 41]]
+    } == result
 
-    # assert {:ok, _, %Result{num_rows: 1}} =
-             # Mssqlex.query(
-               # pid,
-               # ["INSERT INTO query_test.dbo.select_where_in VALUES (?, ?);"],
-               # ["Dexter", 34]
-             # )
+    result = query("SELECT * FROM #{table_name()} WHERE (name IN (?, ?)) AND (age = ?)", ["Dexter", "Malcolm", 41])
+    assert %R{
+      columns: ["name", "age"],
+      num_rows: 1,
+      rows: [["Malcolm", 41]]
+    } == result
 
-    # assert {:ok, _, %Result{num_rows: 1}} =
-             # Mssqlex.query(
-               # pid,
-               # ["INSERT INTO query_test.dbo.select_where_in VALUES (?, ?);"],
-               # ["Malcolm", 41]
-             # )
-
-    # assert {:ok, _,
-            # %Result{
-              # columns: ["name", "age"],
-              # num_rows: 2,
-              # rows: [["Dexter", 34], ["Malcolm", 41]]
-            # }} =
-             # Mssqlex.query(
-               # pid,
-               # "SELECT * FROM query_test.dbo.select_where_in WHERE name IN (?, ?)",
-               # ["Dexter", "Malcolm"]
-             # )
-
-    # assert {:ok, _,
-            # %Result{
-              # columns: ["name", "age"],
-              # num_rows: 1,
-              # rows: [["Malcolm", 41]]
-            # }} =
-             # Mssqlex.query(
-               # pid,
-               # "SELECT * FROM query_test.dbo.select_where_in WHERE (name IN (?, ?)) AND (age = ?)",
-               # ["Dexter", "Malcolm", 41]
-             # )
-
-    # assert {:ok, _,
-            # %Result{
-              # columns: ["name", "age"],
-              # num_rows: 1,
-              # rows: [["Dexter", 34]]
-            # }} =
-             # Mssqlex.query(
-               # pid,
-               # "SELECT * FROM query_test.dbo.select_where_in WHERE (age = ?) AND (name IN (?, ?))",
-               # [34, "Dexter", "Malcolm"]
-             # )
-  # end
+    result = query("SELECT * FROM #{table_name()} WHERE (age = ?) AND (name IN (?, ?))", [34, "Dexter", "Malcolm"])
+    assert %R{
+      columns: ["name", "age"],
+      num_rows: 1,
+      rows: [["Dexter", 34]]
+    } == result
+  end
 end
