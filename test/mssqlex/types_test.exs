@@ -1,12 +1,12 @@
-defmodule Mssqlex.TypesTest do
+defmodule MssqlexV3.TypesTest do
   use ExUnit.Case, async: true
 
-  alias Mssqlex.Result, as: R
+  alias MssqlexV3.Result, as: R
 
-  import Mssqlex.TestHelper
+  import MssqlexV3.TestHelper
 
   setup _context do
-    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, pid} = MssqlexV3.start_link(default_opts())
     {:ok, [pid: pid]}
   end
 
@@ -229,13 +229,13 @@ defmodule Mssqlex.TypesTest do
   end
 
   test "invalid input type", context do
-    assert_raise Mssqlex.Error, ~r/unrecognised type/, fn ->
+    assert_raise MssqlexV3.Error, ~r/unrecognised type/, fn ->
       insert_and_execute(context, "char(10)", [{"Nathan"}])
     end
   end
 
   test "invalid input binary", context do
-    assert_raise Mssqlex.Error, ~r/failed to convert/, fn ->
+    assert_raise MssqlexV3.Error, ~r/failed to convert/, fn ->
       insert_and_execute(context, "char(12)", [<<110, 0, 200>>])
     end
   end

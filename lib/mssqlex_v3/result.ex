@@ -1,4 +1,4 @@
-defmodule Mssqlex.Result do
+defmodule MssqlexV3.Result do
   @moduledoc """
   Result struct returned from any successful query. Its fields are:
     * `columns` - The names of each column in the result set;

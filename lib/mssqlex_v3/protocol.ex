@@ -1,31 +1,31 @@
-defmodule Mssqlex.Protocol do
-# warning: function handle_deallocate/4 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
-  # lib/mssqlex/protocol.ex:1
+defmodule MssqlexV3.Protocol do
+# warning: function handle_deallocate/4 required by behaviour DBConnection is not implemented (in module MssqlexV3.Protocol)
+  # lib/mssqlex_v3/protocol.ex:1
 
-# warning: function handle_declare/4 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
-  # lib/mssqlex/protocol.ex:1
+# warning: function handle_declare/4 required by behaviour DBConnection is not implemented (in module MssqlexV3.Protocol)
+  # lib/mssqlex_v3/protocol.ex:1
 
-# warning: function handle_fetch/4 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
-  # lib/mssqlex/protocol.ex:1
+# warning: function handle_fetch/4 required by behaviour DBConnection is not implemented (in module MssqlexV3.Protocol)
+  # lib/mssqlex_v3/protocol.ex:1
 
-# warning: function handle_status/2 required by behaviour DBConnection is not implemented (in module Mssqlex.Protocol)
-  # lib/mssqlex/protocol.ex:1
+# warning: function handle_status/2 required by behaviour DBConnection is not implemented (in module MssqlexV3.Protocol)
+  # lib/mssqlex_v3/protocol.ex:1
 
   @moduledoc """
-  Implementation of `DBConnection` behaviour for `Mssqlex.ODBC`.
+  Implementation of `DBConnection` behaviour for `MssqlexV3.ODBC`.
 
   Handles translation of concepts to what ODBC expects and holds
   state for a connection.
 
   This module is not called directly, but rather through
-  other `Mssqlex` modules or `DBConnection` functions.
+  other `MssqlexV3` modules or `DBConnection` functions.
   """
 
   use DBConnection
 
-  alias Mssqlex.ODBC
-  alias Mssqlex.Error
-  alias Mssqlex.Result
+  alias MssqlexV3.ODBC
+  alias MssqlexV3.Error
+  alias MssqlexV3.Result
 
   defstruct pid: nil, mssql: :idle, conn_opts: []
 
@@ -46,7 +46,7 @@ defmodule Mssqlex.Protocol do
           conn_opts: Keyword.t()
         }
 
-  @type query :: Mssqlex.Query.t()
+  @type query :: MssqlexV3.Query.t()
   @type params :: [{:odbc.odbc_data_type(), :odbc.value()}]
   @type result :: Result.t()
   @type cursor :: any
@@ -169,7 +169,7 @@ defmodule Mssqlex.Protocol do
   @spec handle_commit(opts :: Keyword.t(), state) ::
           {:ok, result, state}
           | {:error | :disconnect, Exception.t(), state}
-  def handle_commit(opts, %{mssql: :error} = state) do
+  def handle_commit(_opts, %{mssql: :error} = state) do
     {:error, state}
   end
   def handle_commit(opts, state) do
@@ -230,7 +230,7 @@ defmodule Mssqlex.Protocol do
       {:error, %Error{message: "savepoint not allowed in autocommit mode"}, state}
     else
       handle_execute(
-        %Mssqlex.Query{
+        %MssqlexV3.Query{
           name: "",
           statement: "SAVE TRANSACTION mssqlex_savepoint"
         },
@@ -247,7 +247,7 @@ defmodule Mssqlex.Protocol do
 
   defp savepoint_result(:rollback, opts, state) do
     handle_execute(
-      %Mssqlex.Query{
+      %MssqlexV3.Query{
         name: "",
         statement: "ROLLBACK TRANSACTION mssqlex_savepoint"
       },
@@ -261,7 +261,7 @@ defmodule Mssqlex.Protocol do
   @spec handle_prepare(query, opts :: Keyword.t(), state) ::
           {:ok, query, state}
           | {:error | :disconnect, Exception.t(), state}
-  def handle_prepare(query, opts, state) do
+  def handle_prepare(query, _opts, state) do
     {:ok, query, state}
   end
 
@@ -344,7 +344,7 @@ defmodule Mssqlex.Protocol do
   def handle_status(_, %{mssql: mssql} = state), do: {mssql, state}
 
   def ping(state) do
-    query = %Mssqlex.Query{name: "ping", statement: "SELECT 1"}
+    query = %MssqlexV3.Query{name: "ping", statement: "SELECT 1"}
 
     case do_query(query, [], [], state) do
       {:ok, _, _, new_state} -> {:ok, new_state}

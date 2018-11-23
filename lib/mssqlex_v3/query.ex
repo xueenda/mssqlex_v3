@@ -1,6 +1,6 @@
-defmodule Mssqlex.Query do
+defmodule MssqlexV3.Query do
   @moduledoc """
-  Implementation of `DBConnection.Query` for `Mssqlex`.
+  Implementation of `DBConnection.Query` for `MssqlexV3`.
 
   The structure is:
     * `name` - currently not used.
@@ -17,10 +17,10 @@ defmodule Mssqlex.Query do
   defstruct [:name, :cache, :statement, :columns]
 end
 
-defimpl DBConnection.Query, for: Mssqlex.Query do
-  alias Mssqlex.Query
-  alias Mssqlex.Result
-  alias Mssqlex.Type
+defimpl DBConnection.Query, for: MssqlexV3.Query do
+  alias MssqlexV3.Query
+  alias MssqlexV3.Result
+  alias MssqlexV3.Type
 
   @spec parse(query :: Query.t(), opts :: Keyword.t()) :: Query.t()
   def parse(query, _opts), do: query
@@ -42,8 +42,8 @@ defimpl DBConnection.Query, for: Mssqlex.Query do
   def decode(_query, result, _opts), do: result
 end
 
-defimpl String.Chars, for: Mssqlex.Query do
-  def to_string(%Mssqlex.Query{statement: statement}) do
+defimpl String.Chars, for: MssqlexV3.Query do
+  def to_string(%MssqlexV3.Query{statement: statement}) do
     IO.iodata_to_binary(statement)
   end
 end

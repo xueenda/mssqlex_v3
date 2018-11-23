@@ -1,4 +1,4 @@
-defmodule Mssqlex.ErrorCode do
+defmodule MssqlexV3.ErrorCode do
   def code_to_name('01000'), do: :general_warning
   def code_to_name('01001'), do: :cursor_operation_conflict
   def code_to_name('01002'), do: :disconnect_error

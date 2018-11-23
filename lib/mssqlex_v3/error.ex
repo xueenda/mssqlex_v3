@@ -1,4 +1,4 @@
-defmodule Mssqlex.Error do
+defmodule MssqlexV3.Error do
   @moduledoc """
   Defines an error returned from the ODBC adapter.
   * `message` is the full message returned by ODBC
@@ -9,7 +9,7 @@ defmodule Mssqlex.Error do
 
   defexception [:message, :mssql, :connection_id, :query]
 
-  @type t :: %Mssqlex.Error{}
+  @type t :: %MssqlexV3.Error{}
 
   @doc false
   @spec exception({list(), integer(), list()}) :: t()
@@ -39,13 +39,13 @@ defmodule Mssqlex.Error do
         fields
         |> Map.put(:mssql_code, to_string(code))
         |> Map.put(:driver, driver)
-        |> Map.put(:code, Mssqlex.ErrorCode.code_to_name(code))
+        |> Map.put(:code, MssqlexV3.ErrorCode.code_to_name(code))
         |> Map.put(:message, build_message(message, driver))
       end
 
     message = Keyword.get(opts, :message)
     connection_id = Keyword.get(opts, :connection_id)
-    %Mssqlex.Error{mssql: mssql, message: message, connection_id: connection_id}
+    %MssqlexV3.Error{mssql: mssql, message: message, connection_id: connection_id}
   end
 
   def message(e) do
@@ -105,6 +105,6 @@ defmodule Mssqlex.Error do
   # end
 end
 
-defmodule Mssqlex.QueryError do
+defmodule MssqlexV3.QueryError do
   defexception [:message]
 end

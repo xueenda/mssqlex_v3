@@ -1,8 +1,8 @@
-defmodule Mssqlex.LoginTest do
+defmodule MssqlexV3.LoginTest do
   use ExUnit.Case, async: false
 
-  alias Mssqlex.Result, as: R
-  import Mssqlex.TestHelper
+  alias MssqlexV3.Result, as: R
+  import MssqlexV3.TestHelper
   import ExUnit.CaptureLog
 
   @check_encryption """
@@ -12,10 +12,10 @@ defmodule Mssqlex.LoginTest do
   """
 
   test "Given valid details, connects to database" do
-    {:ok, pid} = Mssqlex.start_link(Mssqlex.TestHelper.default_opts)
+    {:ok, pid} = MssqlexV3.start_link(MssqlexV3.TestHelper.default_opts)
 
     assert %R{columns: [""], num_rows: 1, rows: [["test"]]} ==
-      Mssqlex.query!(pid, "SELECT 'test'", [])
+      MssqlexV3.query!(pid, "SELECT 'test'", [])
   end
 
   test "connects with encryption" do
@@ -23,10 +23,10 @@ defmodule Mssqlex.LoginTest do
       default_opts()
       |> Keyword.put(:encrypt, true)
       |> Keyword.put(:trust_server_certificate, true)
-    {:ok, pid} = Mssqlex.start_link(conn_opts)
+    {:ok, pid} = MssqlexV3.start_link(conn_opts)
 
     assert %R{num_rows: 1, rows: [["TRUE"]], columns: ["encrypt_option"]} ==
-      Mssqlex.query!(pid, @check_encryption, [])
+      MssqlexV3.query!(pid, @check_encryption, [])
   end
 
   test "Given invalid details, errors" do
@@ -37,7 +37,7 @@ defmodule Mssqlex.LoginTest do
       |> Keyword.put(:password, "badpass")
 
     assert capture_log(fn ->
-      {:ok, _pid} = Mssqlex.start_link(conn_opts)
+      {:ok, _pid} = MssqlexV3.start_link(conn_opts)
       :timer.sleep(200)
     end) =~ error_msg
   end

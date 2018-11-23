@@ -1,4 +1,4 @@
-defmodule Mssqlex do
+defmodule MssqlexV3 do
   @moduledoc """
   Interface for interacting with MS SQL Server via an ODBC driver for Elixir.
 
@@ -7,8 +7,7 @@ defmodule Mssqlex do
   [README](readme.html) for installation instructions.
   """
 
-  alias Mssqlex.Query
-  alias Mssqlex.Type
+  alias MssqlexV3.Query
 
   @type conn :: DBConnection.conn
 
@@ -38,24 +37,24 @@ defmodule Mssqlex do
     * `:trust_server_certificate` - When used with Encrypt, enables encryption using a self-signed server certificate.
         * environment variable: `MSSQL_TRUST_SERVER_CERT`
 
-  `Mssqlex` uses the `DBConnection` framework and supports all `DBConnection`
+  `MssqlexV3` uses the `DBConnection` framework and supports all `DBConnection`
   options like `:idle`, `:after_connect` etc.
   See `DBConnection.start_link/2` for more information.
 
   ## Examples
 
-      iex> {:ok, pid} = Mssqlex.start_link(database: "mr_microsoft")
+      iex> {:ok, pid} = MssqlexV3.start_link(database: "mr_microsoft")
       {:ok, #PID<0.70.0>}
   """
   @spec start_link(Keyword.t()) :: {:ok, pid}
   def start_link(opts) do
-    DBConnection.start_link(Mssqlex.Protocol, opts)
+    DBConnection.start_link(MssqlexV3.Protocol, opts)
   end
 
   @doc """
   Executes a query against an MS SQL Server with ODBC.
 
-  `conn` expects a `Mssqlex` process identifier.
+  `conn` expects a `MssqlexV3` process identifier.
 
   `statement` expects a SQL query string.
 
@@ -104,7 +103,7 @@ defmodule Mssqlex do
       of these types must convert them to supported types (e.g. varchar).
   """
 
-  @spec query(conn, iodata, list, Keyword.t()) :: {:ok, Mssqlex.Result.t()} | {:error, Exception.t()}
+  @spec query(conn, iodata, list, Keyword.t()) :: {:ok, MssqlexV3.Result.t()} | {:error, Exception.t()}
   def query(conn, statement, params, opts \\ []) do
     if name = Keyword.get(opts, :cache_statement) do
       query = %Query{name: name, cache: :statement, statement: IO.iodata_to_binary(statement)}
@@ -113,7 +112,7 @@ defmodule Mssqlex do
         {:ok, _, result} ->
           {:ok, result}
 
-        {:error, %Mssqlex.Error{mssql: %{code: :feature_not_supported}}} = error->
+        {:error, %MssqlexV3.Error{mssql: %{code: :feature_not_supported}}} = error->
           with %DBConnection{} <- conn,
                :error <- DBConnection.status(conn) do
             error
@@ -137,7 +136,7 @@ defmodule Mssqlex do
   end
 
   @spec prepare_execute(conn, iodata, iodata, list, Keyword.t) ::
-    {:ok, Mssqlex.Query.t, Mssqlex.Result.t} | {:error, Mssqlex.Error.t}
+    {:ok, MssqlexV3.Query.t, MssqlexV3.Result.t} | {:error, MssqlexV3.Error.t}
   def prepare_execute(conn, name, statement, params, opts \\ []) do
     query = %Query{name: name, statement: statement}
     DBConnection.prepare_execute(conn, query, params, opts)
@@ -145,20 +144,20 @@ defmodule Mssqlex do
 
   @doc """
   Prepares and runs a query and returns the result or raises
-  `Mssqlex.Error` if there was an error. See `prepare_execute/5`.
+  `MssqlexV3.Error` if there was an error. See `prepare_execute/5`.
   """
   @spec prepare_execute!(conn, iodata, iodata, list, Keyword.t) ::
-    {Mssqlex.Query.t, Mssqlex.Result.t}
+    {MssqlexV3.Query.t, MssqlexV3.Result.t}
   def prepare_execute!(conn, name, statement, params, opts \\ []) do
     query = %Query{name: name, statement: statement}
     DBConnection.prepare_execute!(conn, query, params, opts)
   end
 
   @doc """
-  Runs an (extended) query and returns the result or raises `Mssqlex.Error` if
+  Runs an (extended) query and returns the result or raises `MssqlexV3.Error` if
   there was an error. See `query/3`.
   """
-  @spec query!(conn, iodata, list, Keyword.t()) :: Mssqlex.Result.t()
+  @spec query!(conn, iodata, list, Keyword.t()) :: MssqlexV3.Result.t()
   def query!(conn, statement, params, opts \\ []) do
     case query(conn, statement, params, opts) do
       {:ok, result} -> result
@@ -171,7 +170,7 @@ defmodule Mssqlex do
   """
   @spec child_spec(Keyword.t) :: Supervisor.Spec.spec
   def child_spec(opts) do
-    opts = Mssqlex.Utils.default_opts(opts)
-    DBConnection.child_spec(Mssqlex.Protocol, opts)
+    opts = MssqlexV3.Utils.default_opts(opts)
+    DBConnection.child_spec(MssqlexV3.Protocol, opts)
   end
 end

@@ -1,4 +1,4 @@
-defmodule Mssqlex.Type do
+defmodule MssqlexV3.Type do
   @moduledoc """
   Type conversions.
   """
@@ -114,7 +114,7 @@ defmodule Mssqlex.Type do
       {{:sql_wvarchar, byte_size(value)}, [utf16]}
     else
       _ ->
-        raise Mssqlex.Error.exception(message: "failed to convert string to UTF16LE")
+        raise MssqlexV3.Error.exception(message: "failed to convert string to UTF16LE")
     end
   end
 
@@ -123,7 +123,7 @@ defmodule Mssqlex.Type do
   end
 
   def encode(value, _) do
-    raise Mssqlex.Error.exception(message: "could not parse param #{inspect(value)} of unrecognised type.")
+    raise MssqlexV3.Error.exception(message: "could not parse param #{inspect(value)} of unrecognised type.")
   end
 
   @doc """

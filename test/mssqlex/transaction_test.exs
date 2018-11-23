@@ -1,14 +1,14 @@
-defmodule Mssqlex.TransactionTest do
+defmodule MssqlexV3.TransactionTest do
   use ExUnit.Case, async: true
 
   import ExUnit.CaptureLog
-  import Mssqlex.TestHelper
+  import MssqlexV3.TestHelper
 
-  alias Mssqlex.Result, as: R
-  alias Mssqlex.Error, as: E
+  alias MssqlexV3.Result, as: R
+  alias MssqlexV3.Error, as: E
 
   setup context do
-    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, pid} = MssqlexV3.start_link(default_opts())
     {:ok, [pid: pid, test: context[:test]]}
   end
 
@@ -73,8 +73,8 @@ defmodule Mssqlex.TransactionTest do
 
         DBConnection.transaction(tr_main_pid, fn tr_nested_pid ->
           context = %{pid: tr_nested_pid, test: context[:test]}
-          Mssqlex.query(tr_nested_pid, "INSERT INTO #{table_name()} VALUES (?)", ["Jas"], [])
-          Mssqlex.query(tr_nested_pid, "INSERT INTO #{table_name()} VALUES (?)", ["Steven"], [])
+          MssqlexV3.query(tr_nested_pid, "INSERT INTO #{table_name()} VALUES (?)", ["Jas"], [])
+          MssqlexV3.query(tr_nested_pid, "INSERT INTO #{table_name()} VALUES (?)", ["Steven"], [])
         end)
         result
       end)
@@ -114,7 +114,7 @@ defmodule Mssqlex.TransactionTest do
   end
 
   test "failing savepoint", %{pid: pid} = context do
-    assert_raise Mssqlex.Error, fn ->
+    assert_raise MssqlexV3.Error, fn ->
       DBConnection.transaction(pid, fn tr_main_pid ->
         context = %{pid: tr_main_pid, test: context[:test]}
         %R{} = query("CREATE TABLE #{table_name()} (name varchar(3))")
@@ -126,7 +126,7 @@ defmodule Mssqlex.TransactionTest do
           end, mode: :savepoint)
 
         DBConnection.transaction(tr_main_pid, fn tr_nested_pid ->
-          %R{} = Mssqlex.query!(tr_nested_pid, "INSERT INTO #{table_name()} VALUES (?)", ["Steven"])
+          %R{} = MssqlexV3.query!(tr_nested_pid, "INSERT INTO #{table_name()} VALUES (?)", ["Steven"])
         end, mode: :savepoint)
       end, mode: :savepoint)
     end

@@ -1,5 +1,5 @@
-defmodule Mssqlex.TestHelper do
-  alias Mssqlex.Result, as: R
+defmodule MssqlexV3.TestHelper do
+  alias MssqlexV3.Result, as: R
 
   @default_opts [
     hostname: System.get_env("MSSQL_HST") || "localhost",
@@ -12,9 +12,9 @@ defmodule Mssqlex.TestHelper do
   def default_opts, do: @default_opts
 
   def reset_db do 
-    {:ok, pid} = Mssqlex.start_link([{:database, "master"} | @default_opts])
-    {:ok, %R{}} = Mssqlex.query(pid, "DROP DATABASE IF EXISTS mssqlex_test", [])
-    {:ok, %R{}} = Mssqlex.query(pid, "CREATE DATABASE mssqlex_test COLLATE Latin1_General_CS_AS_KS_WS", [])
+    {:ok, pid} = MssqlexV3.start_link([{:database, "master"} | @default_opts])
+    {:ok, %R{}} = MssqlexV3.query(pid, "DROP DATABASE IF EXISTS mssqlex_test", [])
+    {:ok, %R{}} = MssqlexV3.query(pid, "CREATE DATABASE mssqlex_test COLLATE Latin1_General_CS_AS_KS_WS", [])
     GenServer.stop(pid, :normal)
   end
 
@@ -36,13 +36,13 @@ defmodule Mssqlex.TestHelper do
 
   defmacro query(stat, params \\ [], opts \\ []) do
     quote do
-      case Mssqlex.query(var!(context)[:pid], unquote(stat), unquote(params), unquote(opts)) do
-        {:ok, %Mssqlex.Result{} = result} -> result
+      case MssqlexV3.query(var!(context)[:pid], unquote(stat), unquote(params), unquote(opts)) do
+        {:ok, %MssqlexV3.Result{} = result} -> result
         {:error, err} -> err
       end
     end
   end
 end
 
-Mssqlex.TestHelper.reset_db()
+MssqlexV3.TestHelper.reset_db()
 ExUnit.start()

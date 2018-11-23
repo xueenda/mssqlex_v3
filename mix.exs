@@ -1,9 +1,9 @@
-defmodule Mssqlex.Mixfile do
+defmodule MssqlexV3.Mixfile do
   use Mix.Project
 
   def project do
     [
-      app: :mssqlex,
+      app: :mssqlex_v3,
       version: "1.1.0",
       description:
         "Adapter to Microsoft SQL Server. Using DBConnection and ODBC.",
@@ -23,8 +23,8 @@ defmodule Mssqlex.Mixfile do
       ],
 
       # Docs
-      name: "Mssqlex",
-      source_url: "https://github.com/findmypast-oss/mssqlex",
+      name: "MssqlexV3",
+      source_url: "https://github.com/findmypast-oss/mssqlex_v3",
       docs: [main: "readme", extras: ["README.md"]]
     ]
   end
@@ -46,11 +46,11 @@ defmodule Mssqlex.Mixfile do
 
   defp package do
     [
-      name: :mssqlex,
+      name: :mssqlex_v3,
       files: ["lib", "mix.exs", "README.md", "LICENSE"],
       maintainers: ["Steven Blowers", "Jae Bach Hardie"],
       licenses: ["Apache 2.0"],
-      links: %{"GitHub" => "https://github.com/findmypast-oss/mssqlex"}
+      links: %{"GitHub" => "https://github.com/findmypast-oss/mssqlex_v3"}
     ]
   end
 

@@ -1,15 +1,15 @@
-defmodule Mssqlex.StorageTest do
+defmodule MssqlexV3.StorageTest do
   use ExUnit.Case
 
-  import Mssqlex.TestHelper
+  import MssqlexV3.TestHelper
 
-  alias Mssqlex.Result, as: R
-  alias Mssqlex.Error, as: E
+  alias MssqlexV3.Result, as: R
+  alias MssqlexV3.Error, as: E
 
   @test_db "mssqlex_test_db"
 
   setup context do
-    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, pid} = MssqlexV3.start_link(default_opts())
     {:ok, [pid: pid, test: context[:test]]}
   end
 

@@ -1,13 +1,13 @@
-defmodule Mssqlex.ConstraintsTest do
+defmodule MssqlexV3.ConstraintsTest do
   use ExUnit.Case, async: true
 
-  import Mssqlex.TestHelper
+  import MssqlexV3.TestHelper
 
-  alias Mssqlex.Result, as: R
-  alias Mssqlex.Error, as: E
+  alias MssqlexV3.Result, as: R
+  alias MssqlexV3.Error, as: E
 
   setup context do
-    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, pid} = MssqlexV3.start_link(default_opts())
     {:ok, [pid: pid, test: context[:test]]}
   end
 

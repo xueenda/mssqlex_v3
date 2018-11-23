@@ -1,4 +1,4 @@
-defmodule Mssqlex.ODBC do
+defmodule MssqlexV3.ODBC do
   @moduledoc """
   Adapter to Erlang's `:odbc` module.
 
@@ -6,13 +6,13 @@ defmodule Mssqlex.ODBC do
   and Erlang's `:odbc` module. Transformations are kept to a minimum,
   primarily just translating binaries to charlists and vice versa.
 
-  It is used by `Mssqlex.Protocol` and should not generally be
+  It is used by `MssqlexV3.Protocol` and should not generally be
   accessed directly.
   """
 
   use GenServer
 
-  alias Mssqlex.Error
+  alias MssqlexV3.Error
 
   ## Private API
   
@@ -24,7 +24,7 @@ defmodule Mssqlex.ODBC do
       {:ok, pid} ->
         {:ok, pid}
       {:error, {odbc_code, _native_code, message}} ->
-        {:error, Mssqlex.Error.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
+        {:error, MssqlexV3.Error.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
     end
   end
 
@@ -53,7 +53,7 @@ defmodule Mssqlex.ODBC do
         connect_opts = Keyword.put_new(connect_opts, :conn_str, conn_str)
         {:ok, connect_opts}
       {:ok, {:error, {odbc_code, _native_code, message}}} ->
-        {:error, Mssqlex.Error.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
+        {:error, MssqlexV3.Error.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
       {:exit, :timeout} ->
         {:error, DBConnection.ConnectionError.exception("tcp connect (#{hostname}:#{port}): non-existing domain - :nxdomain")}
       result ->
@@ -110,7 +110,7 @@ defmodule Mssqlex.ODBC do
         Keyword.get(opts, :timeout, 5000)
       )
     else
-      {:error, %Mssqlex.Error{message: :no_connection}}
+      {:error, %MssqlexV3.Error{message: :no_connection}}
     end
   end
 

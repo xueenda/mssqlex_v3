@@ -1,6 +1,6 @@
-# Mssqlex.Types.define(Mssqlex.DefaultTypes, [])
+# MssqlexV3.Types.define(MssqlexV3.DefaultTypes, [])
 
-defmodule Mssqlex.Utils do
+defmodule MssqlexV3.Utils do
 
   @doc """
   Fills in the given `opts` with default options.
@@ -13,7 +13,7 @@ defmodule Mssqlex.Utils do
     |> Keyword.put_new(:database, System.get_env("MSSQL_DB"))
     |> Keyword.put_new(:hostname, System.get_env("MSSQL_HST") || "localhost")
     |> Keyword.update(:port, normalize_port(System.get_env("MSSQL_PRT")), &normalize_port/1)
-    # |> Keyword.put_new(:types, Mssqlex.DefaultTypes)
+    # |> Keyword.put_new(:types, MssqlexV3.DefaultTypes)
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
   end
 
