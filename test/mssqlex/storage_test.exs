@@ -4,7 +4,7 @@ defmodule Mssqlex.StorageTest do
   import Mssqlex.TestHelper
 
   alias Mssqlex.Result, as: R
-  alias Mssqlex.NewError, as: E
+  alias Mssqlex.Error, as: E
 
   @test_db "mssqlex_test_db"
 

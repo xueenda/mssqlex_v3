@@ -113,7 +113,7 @@ defmodule Mssqlex do
         {:ok, _, result} ->
           {:ok, result}
 
-        {:error, %Mssqlex.NewError{mssql: %{code: :feature_not_supported}}} = error->
+        {:error, %Mssqlex.Error{mssql: %{code: :feature_not_supported}}} = error->
           with %DBConnection{} <- conn,
                :error <- DBConnection.status(conn) do
             error
@@ -137,7 +137,7 @@ defmodule Mssqlex do
   end
 
   @spec prepare_execute(conn, iodata, iodata, list, Keyword.t) ::
-    {:ok, Mssqlex.Query.t, Mssqlex.Result.t} | {:error, Mssqlex.NewError.t}
+    {:ok, Mssqlex.Query.t, Mssqlex.Result.t} | {:error, Mssqlex.Error.t}
   def prepare_execute(conn, name, statement, params, opts \\ []) do
     query = %Query{name: name, statement: statement}
     DBConnection.prepare_execute(conn, query, params, opts)

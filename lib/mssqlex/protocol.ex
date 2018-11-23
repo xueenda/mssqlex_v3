@@ -24,7 +24,7 @@ defmodule Mssqlex.Protocol do
   use DBConnection
 
   alias Mssqlex.ODBC
-  alias Mssqlex.NewError
+  alias Mssqlex.Error
   alias Mssqlex.Result
 
   defstruct pid: nil, mssql: :idle, conn_opts: []
@@ -196,10 +196,10 @@ defmodule Mssqlex.Protocol do
         {:ok, %Result{num_rows: 0}, %{state | mssql: :transaction}}
 
       :transaction ->
-        {:error, %NewError{message: "Already in transaction"}, state}
+        {:error, %Error{message: "Already in transaction"}, state}
 
       :auto_commit ->
-        {:error, %NewError{message: "Transactions not allowed in autocommit mode"}, state}
+        {:error, %Error{message: "Transactions not allowed in autocommit mode"}, state}
     end
   end
 
@@ -227,7 +227,7 @@ defmodule Mssqlex.Protocol do
 
   defp savepoint_result(:begin, opts, state) do
     if state.mssql == :autocommit do
-      {:error, %NewError{message: "savepoint not allowed in autocommit mode"}, state}
+      {:error, %Error{message: "savepoint not allowed in autocommit mode"}, state}
     else
       handle_execute(
         %Mssqlex.Query{
@@ -297,7 +297,7 @@ defmodule Mssqlex.Protocol do
   defp do_query(query, params, opts, state) do
     opts = [{:timeout, 15_000} | opts]
     case ODBC.query(state.pid, query.statement, params, opts) do
-      {:error, %NewError{mssql: %{code: :not_allowed_in_transaction}} = reason} ->
+      {:error, %Error{mssql: %{code: :not_allowed_in_transaction}} = reason} ->
         if state.mssql == :auto_commit do
           {:error, reason, state}
         else
@@ -305,7 +305,7 @@ defmodule Mssqlex.Protocol do
             do: handle_execute(query, params, opts, new_state)
         end
 
-      {:error, %NewError{mssql: %{code: :connection_exception} = reason}} ->
+      {:error, %Error{mssql: %{code: :connection_exception} = reason}} ->
         {:disconnect, reason, state}
 
       {:error, reason} ->

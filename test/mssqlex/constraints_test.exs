@@ -4,7 +4,7 @@ defmodule Mssqlex.ConstraintsTest do
   import Mssqlex.TestHelper
 
   alias Mssqlex.Result, as: R
-  alias Mssqlex.NewError, as: E
+  alias Mssqlex.Error, as: E
 
   setup context do
     {:ok, pid} = Mssqlex.start_link(default_opts())

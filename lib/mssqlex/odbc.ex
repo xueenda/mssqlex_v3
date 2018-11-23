@@ -12,11 +12,11 @@ defmodule Mssqlex.ODBC do
 
   use GenServer
 
-  alias Mssqlex.NewError
+  alias Mssqlex.Error
 
   ## Private API
   
-  @spec get_connection(Keyword.t()) :: {:ok, pid()} | {:error, NewError.t()}
+  @spec get_connection(Keyword.t()) :: {:ok, pid()} | {:error, Error.t()}
   defp get_connection(opts) do
     connect_opts = Keyword.delete_first(opts, :conn_str)
 
@@ -24,11 +24,11 @@ defmodule Mssqlex.ODBC do
       {:ok, pid} ->
         {:ok, pid}
       {:error, {odbc_code, _native_code, message}} ->
-        {:error, Mssqlex.NewError.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
+        {:error, Mssqlex.Error.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
     end
   end
 
-  @spec test_connection(binary(), Keyword.t()) :: {:ok, Keyword.t()} | {:error, NewError.t()}
+  @spec test_connection(binary(), Keyword.t()) :: {:ok, Keyword.t()} | {:error, Error.t()}
   defp test_connection(conn_str, opts) do
     conn_str = to_charlist(conn_str)
     connect_opts =
@@ -53,7 +53,7 @@ defmodule Mssqlex.ODBC do
         connect_opts = Keyword.put_new(connect_opts, :conn_str, conn_str)
         {:ok, connect_opts}
       {:ok, {:error, {odbc_code, _native_code, message}}} ->
-        {:error, Mssqlex.NewError.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
+        {:error, Mssqlex.Error.exception([mssql: %{driver: opts[:driver], code: odbc_code, message: message}])}
       {:exit, :timeout} ->
         {:error, DBConnection.ConnectionError.exception("tcp connect (#{hostname}:#{port}): non-existing domain - :nxdomain")}
       result ->
@@ -127,7 +127,7 @@ defmodule Mssqlex.ODBC do
     if Process.alive?(pid) do
       GenServer.call(pid, :commit)
     else
-      {:error, NewError.exception(:no_connection)}
+      {:error, Error.exception(:no_connection)}
     end
   end
 
@@ -141,7 +141,7 @@ defmodule Mssqlex.ODBC do
     if Process.alive?(pid) do
       GenServer.call(pid, :rollback)
     else
-      {:error, NewError.exception(:no_connection)}
+      {:error, Error.exception(:no_connection)}
     end
   end
 
@@ -191,6 +191,6 @@ defmodule Mssqlex.ODBC do
     :odbc.disconnect(state)
   end
 
-  defp handle_errors({:error, reason}), do: {:error, NewError.exception(reason)}
+  defp handle_errors({:error, reason}), do: {:error, Error.exception(reason)}
   defp handle_errors(term), do: term
 end

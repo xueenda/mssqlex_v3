@@ -229,13 +229,13 @@ defmodule Mssqlex.TypesTest do
   end
 
   test "invalid input type", context do
-    assert_raise Mssqlex.NewError, ~r/unrecognised type/, fn ->
+    assert_raise Mssqlex.Error, ~r/unrecognised type/, fn ->
       insert_and_execute(context, "char(10)", [{"Nathan"}])
     end
   end
 
   test "invalid input binary", context do
-    assert_raise Mssqlex.NewError, ~r/failed to convert/, fn ->
+    assert_raise Mssqlex.Error, ~r/failed to convert/, fn ->
       insert_and_execute(context, "char(12)", [<<110, 0, 200>>])
     end
   end

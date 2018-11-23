@@ -5,7 +5,7 @@ defmodule Mssqlex.TransactionTest do
   import Mssqlex.TestHelper
 
   alias Mssqlex.Result, as: R
-  alias Mssqlex.NewError, as: E
+  alias Mssqlex.Error, as: E
 
   setup context do
     {:ok, pid} = Mssqlex.start_link(default_opts())
@@ -114,7 +114,7 @@ defmodule Mssqlex.TransactionTest do
   end
 
   test "failing savepoint", %{pid: pid} = context do
-    assert_raise Mssqlex.NewError, fn ->
+    assert_raise Mssqlex.Error, fn ->
       DBConnection.transaction(pid, fn tr_main_pid ->
         context = %{pid: tr_main_pid, test: context[:test]}
         %R{} = query("CREATE TABLE #{table_name()} (name varchar(3))")
