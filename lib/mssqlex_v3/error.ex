@@ -21,7 +21,7 @@ defmodule MssqlexV3.Error do
     exception([mssql: %{code: :not_allowed_in_transaction, message: reason}])
   end
 
-  def exception({odbc_code, native_code, reason}) do
+  def exception({odbc_code, _native_code, reason}) do
     exception([mssql: %{code: odbc_code, message: reason}])
   end
 

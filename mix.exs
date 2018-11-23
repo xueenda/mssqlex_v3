@@ -4,7 +4,7 @@ defmodule MssqlexV3.Mixfile do
   def project do
     [
       app: :mssqlex_v3,
-      version: "1.1.0",
+      version: "3.0.0",
       description:
         "Adapter to Microsoft SQL Server. Using DBConnection and ODBC.",
       elixir: "~> 1.6",
@@ -24,13 +24,17 @@ defmodule MssqlexV3.Mixfile do
 
       # Docs
       name: "MssqlexV3",
-      source_url: "https://github.com/findmypast-oss/mssqlex_v3",
+      source_url: "https://github.com/nikneroz/mssqlex_v3",
       docs: [main: "readme", extras: ["README.md"]]
     ]
   end
 
   def application do
     [extra_applications: [:logger, :odbc]]
+  end
+
+  defp aliases do
+    []
   end
 
   defp deps do
@@ -48,20 +52,9 @@ defmodule MssqlexV3.Mixfile do
     [
       name: :mssqlex_v3,
       files: ["lib", "mix.exs", "README.md", "LICENSE"],
-      maintainers: ["Steven Blowers", "Jae Bach Hardie"],
+      maintainers: ["Steven Blowers", "Jae Bach Hardie", "Denis Rozenkin"],
       licenses: ["Apache 2.0"],
-      links: %{"GitHub" => "https://github.com/findmypast-oss/mssqlex_v3"}
+      links: %{"GitHub" => "https://github.com/nikneroz/mssqlex_v3"}
     ]
-  end
-
-  defp aliases do
-    ["test.local": [&setup_env/1, "test"]]
-  end
-
-  defp setup_env(_) do
-    # System.put_env("MSSQL_HST", "127.0.0.1")
-    System.put_env("MSSQL_HST", "192.168.1.50")
-    System.put_env("MSSQL_UID", "sa")
-    System.put_env("MSSQL_PWD", "sa_5ecretpa$$")
   end
 end
