@@ -137,7 +137,7 @@ defmodule Mssqlex do
   end
 
   @spec prepare_execute(conn, iodata, iodata, list, Keyword.t) ::
-    {:ok, Mssqlex.Query.t, Mssqlex.Result.t} | {:error, Mssqlex.Error.t}
+    {:ok, Mssqlex.Query.t, Mssqlex.Result.t} | {:error, Mssqlex.NewError.t}
   def prepare_execute(conn, name, statement, params, opts \\ []) do
     query = %Query{name: name, statement: statement}
     DBConnection.prepare_execute(conn, query, params, opts)

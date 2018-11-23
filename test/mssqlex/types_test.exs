@@ -5,9 +5,9 @@ defmodule Mssqlex.TypesTest do
 
   import Mssqlex.TestHelper
 
-  setup context do
-    {:ok, pid} = Mssqlex.start_link(Mssqlex.TestHelper.default_opts)
-    {:ok, [pid: pid, test: context[:test]]}
+  setup _context do
+    {:ok, pid} = Mssqlex.start_link(default_opts())
+    {:ok, [pid: pid]}
   end
 
   test "char", context do
@@ -238,11 +238,6 @@ defmodule Mssqlex.TypesTest do
     assert_raise Mssqlex.NewError, ~r/failed to convert/, fn ->
       insert_and_execute(context, "char(12)", [<<110, 0, 200>>])
     end
-  end
-
-  defp table_name(type) do
-    database = Mssqlex.TestHelper.default_opts[:database]
-    ~s(#{database}.dbo."#{Base.url_encode64(type)}")
   end
 
   defp insert(context, type, params, opts \\ []) do

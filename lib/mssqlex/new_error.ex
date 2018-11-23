@@ -37,6 +37,14 @@ defmodule Mssqlex.NewError do
 
   @doc false
   @spec exception({list(), integer(), list()}) :: t()
+  def exception({odbc_code, _native_code, reason}) do
+    exception([mssql: %{code: odbc_code, message: reason}])
+  end
+
+  def exception(code) when is_atom(code) do
+    exception([mssql: %{code: code, message: code}])
+  end
+
   def exception(opts) do
     mssql =
       if fields = Keyword.get(opts, :mssql) do
@@ -85,6 +93,7 @@ defmodule Mssqlex.NewError do
     |> to_string()
     |> String.replace("[Microsoft]", "")
     |> String.replace("[SQL Server]", "")
+    |> String.replace("[ODBC Driver 17 for SQL Server]", "")
     |> String.replace("[#{driver}]", "")
     |> String.replace(~r/(\.\s+|\.)/, ". ")
     |> String.trim()

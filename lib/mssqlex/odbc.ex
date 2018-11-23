@@ -12,7 +12,6 @@ defmodule Mssqlex.ODBC do
 
   use GenServer
 
-  alias Mssqlex.Error
   alias Mssqlex.NewError
 
   ## Private API
@@ -128,7 +127,7 @@ defmodule Mssqlex.ODBC do
     if Process.alive?(pid) do
       GenServer.call(pid, :commit)
     else
-      {:error, %Mssqlex.Error{message: :no_connection}}
+      {:error, NewError.exception(:no_connection)}
     end
   end
 
@@ -142,7 +141,7 @@ defmodule Mssqlex.ODBC do
     if Process.alive?(pid) do
       GenServer.call(pid, :rollback)
     else
-      {:error, %Mssqlex.Error{message: :no_connection}}
+      {:error, NewError.exception(:no_connection)}
     end
   end
 
@@ -192,6 +191,6 @@ defmodule Mssqlex.ODBC do
     :odbc.disconnect(state)
   end
 
-  defp handle_errors({:error, reason}), do: {:error, Error.exception(reason)}
+  defp handle_errors({:error, reason}), do: {:error, NewError.exception(reason)}
   defp handle_errors(term), do: term
 end
