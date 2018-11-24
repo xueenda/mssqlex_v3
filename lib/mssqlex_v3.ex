@@ -128,6 +128,54 @@ defmodule MssqlexV3 do
     end
   end
 
+  @doc """
+  Runs an (extended) query and returns the result or raises `MssqlexV3.Error` if
+  there was an error. See `query/3`.
+  """
+  @spec query!(conn, iodata, list, Keyword.t()) :: MssqlexV3.Result.t()
+  def query!(conn, statement, params, opts \\ []) do
+    case query(conn, statement, params, opts) do
+      {:ok, result} -> result
+      {:error, err} -> raise err
+    end
+  end
+
+  @doc """
+  Runs an (extended) prepared query.
+  It returns the result as `{:ok, %MssqlexV3.Query{}, %MssqlexV3.Result{}}` or
+  `{:error, %MssqlexV3.Error{}}` if there was an error. Parameters are given as
+  part of the prepared query, `%MssqlexV3.Query{}`.
+  See the README for information on how MssqlexV3 encodes and decodes Elixir
+  values by default. See `MssqlexV3.Query` for the query data and
+  `MssqlexV3.Result` for the result data.
+  ## Options
+    * `:queue` - Whether to wait for connection in a queue (default: `true`);
+    * `:timeout` - Execute request timeout (default: `#{@timeout}`);
+    * `:decode_mapper` - Fun to map each row in the result to a term after
+    decoding, (default: `fn x -> x end`);
+    * `:mode` - set to `:savepoint` to use a savepoint to rollback to before the
+    execute on error, otherwise set to `:transaction` (default: `:transaction`);
+  ## Examples
+      query = MssqlexV3.prepare!(conn, "", "CREATE TABLE posts (id serial, title text)")
+      MssqlexV3.execute(conn, query, [])
+      query = MssqlexV3.prepare!(conn, "", "SELECT id FROM posts WHERE title like $1")
+      MssqlexV3.execute(conn, query, ["%my%"])
+  """
+  @spec execute(conn, MssqlexV3.Query.t, list, Keyword.t) ::
+    {:ok, MssqlexV3.Query.t, MssqlexV3.Result.t} | {:error, MssqlexV3.Error.t}
+  def execute(conn, query, params, opts \\ []) do
+    DBConnection.execute(conn, query, params, opts)
+  end
+
+  @doc """
+  Runs an (extended) prepared query and returns the result or raises
+  `MssqlexV3.Error` if there was an error. See `execute/4`.
+  """
+  @spec execute!(conn, MssqlexV3.Query.t, list, Keyword.t) :: MssqlexV3.Result.t
+  def execute!(conn, query, params, opts \\ []) do
+    DBConnection.execute!(conn, query, params, opts)
+  end
+
   defp query_prepare_execute(conn, query, params, opts) do
     case DBConnection.prepare_execute(conn, query, params, opts) do
       {:ok, _, result} -> {:ok, result}
@@ -151,18 +199,6 @@ defmodule MssqlexV3 do
   def prepare_execute!(conn, name, statement, params, opts \\ []) do
     query = %Query{name: name, statement: statement}
     DBConnection.prepare_execute!(conn, query, params, opts)
-  end
-
-  @doc """
-  Runs an (extended) query and returns the result or raises `MssqlexV3.Error` if
-  there was an error. See `query/3`.
-  """
-  @spec query!(conn, iodata, list, Keyword.t()) :: MssqlexV3.Result.t()
-  def query!(conn, statement, params, opts \\ []) do
-    case query(conn, statement, params, opts) do
-      {:ok, result} -> result
-      {:error, err} -> raise err
-    end
   end
 
   @doc """
