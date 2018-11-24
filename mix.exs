@@ -7,7 +7,7 @@ defmodule MssqlexV3.Mixfile do
       version: "3.0.2",
       description:
         "Adapter to Microsoft SQL Server. Using DBConnection and ODBC.",
-      elixir: "~> 1.6",
+      elixir: "~> 1.7",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -40,7 +40,7 @@ defmodule MssqlexV3.Mixfile do
   defp deps do
     [
       {:db_connection, "~> 2.0"},
-      {:decimal, "~> 1.0"},
+      {:decimal, "~> 1.6"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:excoveralls, "~> 0.6", only: :test},
       {:inch_ex, "~> 0.5", only: :docs},
