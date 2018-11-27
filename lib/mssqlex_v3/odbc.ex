@@ -104,6 +104,7 @@ defmodule MssqlexV3.ODBC do
         statement
         |> IO.iodata_to_binary()
         |> String.replace(~r/\$\d+/, "?")
+        |> String.replace(~r/\?\d+/, "?")
       GenServer.call(
         pid,
         {:query, %{statement: statement, params: params}},

@@ -295,7 +295,7 @@ defmodule MssqlexV3.Protocol do
   end
 
   defp do_query(query, params, opts, state) do
-    opts = [{:timeout, 15_000} | opts]
+    opts = [{:timeout, 60_000} | opts]
     case ODBC.query(state.pid, query.statement, params, opts) do
       {:error, %Error{mssql: %{code: :not_allowed_in_transaction}} = reason} ->
         if state.mssql == :auto_commit do
