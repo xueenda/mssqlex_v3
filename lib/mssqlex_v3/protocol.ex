@@ -57,34 +57,8 @@ defmodule MssqlexV3.Protocol do
           | {:error, Exception.t()}
   def connect(opts) do
     opts = Keyword.put_new(opts, :connect_timeout, 5_000)
-
-    server_address = opts[:hostname] || System.get_env("MSSQL_HST") || "localhost"
-
-    instance_name = opts[:instance_name] || System.get_env("MSSQL_IN")
-    port = opts[:port] || System.get_env("MSSQL_PRT")
-    encrypt = opts[:encrypt] || System.get_env("MSSQL_ENCRYPT")
-
-    trust =
-      opts[:trust_server_certificate] ||
-        System.get_env("MSSQL_TRUST_SERVER_CERT")
-
-    driver = opts[:odbc_driver] || System.get_env("MSSQL_DVR") || "{ODBC Driver 17 for SQL Server}"
-    opts = Keyword.put(opts, :driver, driver)
-
-    conn_opts = [
-      {"Driver", driver},
-      {"Server", build_server_address(server_address, instance_name, port)},
-      {"Database", opts[:database] || System.get_env("MSSQL_DB")},
-      {"UID", opts[:username] || System.get_env("MSSQL_UID")},
-      {"PWD", opts[:password] || System.get_env("MSSQL_PWD")},
-      {"Encrypt", to_yesno(encrypt)},
-      {"TrustServerCertificate", to_yesno(trust)}
-    ]
-
-    conn_str =
-      Enum.reduce(conn_opts, "", fn {key, value}, acc ->
-        acc <> "#{key}=#{value};"
-      end)
+      
+    conn_str = System.get_env("MSSQL_ODBC_CONN_STR")
 
     case ODBC.start_link(conn_str, opts) do
       {:ok, pid} ->
